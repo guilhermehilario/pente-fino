@@ -123,11 +123,43 @@ export function SearchScreen({ onSearch }: { onSearch: (query: string) => void }
                 type="submit"
                 className={buttons.primary}
               >
-                Pesquisar
+                <span className="hidden sm:inline">Pesquisar</span>
+                <ScanLine className="sm:hidden" size={20} />
               </button>
             </div>
           </div>
         </form>
+
+        {Object.values(selectedFilters).some(arr => arr.length > 0) && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-6 animate-in fade-in slide-in-from-top-2">
+            {Object.entries(selectedFilters).map(([categoryId, options]) => (
+              options.map(option => (
+                <span 
+                  key={`${categoryId}-${option}`} 
+                  className="bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full text-sm font-medium border border-blue-500/30 flex items-center gap-2 group cursor-default"
+                >
+                  {option}
+                  <button 
+                    type="button"
+                    onClick={() => toggleFilter(categoryId, option)}
+                    className="hover:text-blue-200 hover:bg-blue-500/20 rounded-full p-0.5 transition-colors"
+                    title="Remover filtro"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              ))
+            ))}
+            <button 
+              onClick={() => setSelectedFilters({})}
+              className="text-sm text-slate-400 hover:text-slate-200 transition-colors ml-2 font-medium"
+            >
+              Limpar todos
+            </button>
+          </div>
+        )}
 
         {showFilters && (
           <div className={cards.filterPanel}>
