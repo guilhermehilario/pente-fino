@@ -117,8 +117,19 @@ navEntries    // Array completo do histórico (para exibir UI)
 
 ### Lógica de busca
 
-- Query contém `"roberto"`, `"alves"` ou `"deputado"` → **PersonDashboard**
-- Caso contrário → **CompanyDashboard**
+A função `searchEntity(query)` em `App.tsx` implementa busca por **scoring**:
+
+| Critério | Score | Mín. caracteres |
+|---|---|---|
+| Nome exato | 100 | — |
+| CNPJ corresponde | 90 | 8 dígitos |
+| Nome contém a query | 80 | 2 |
+| Palavra começa com a query | 50 | 3 |
+| Cargo contém a query | 40 | 3 |
+
+- Ordena resultados por score (melhor primeiro)
+- Fallback para político se query contém "deputado", "senador", "prefeito", etc.
+- Fallback para empresa (id:1) se nada encontrado
 
 ---
 
@@ -141,7 +152,7 @@ navEntries    // Array completo do histórico (para exibir UI)
 - Botão "Limpar todos" para remover todos os filtros ativos
 - Layout centralizado vertical e horizontalmente
 
-**Props:** `{ onSearch: (query: string) => void }`
+**Props:** `{ onSearch: (query: string) => void; searchHistory: string[]; onRemoveSearch: (query: string) => void; onClearHistory: () => void }`
 
 ### 4.2 CompanyDashboard (`src/screens/CompanyDashboard.tsx`)
 
@@ -155,7 +166,7 @@ navEntries    // Array completo do histórico (para exibir UI)
   - Aba "Sócios": Nome (com avatar), Qualificação (badge), Participação
 - **Sidebar:** Card de Contato com e-mail, telefone e endereço
 
-**Props:** `{ onBack: () => void; onPoliticianClick?: (id: number) => void }`
+**Props:** `{ companyId: number; onBack: () => void; onPoliticianClick?: (id: number) => void; onGraphClick?: () => void; onDetailClick?: () => void }`
 
 ### 4.3 PersonDashboard (`src/screens/PersonDashboard.tsx`)
 
@@ -169,14 +180,14 @@ navEntries    // Array completo do histórico (para exibir UI)
   - Aba "Pessoas": Nome (com avatar), Cargo (badge), Relação/Vínculo
 - **Sidebar:** Card de Contato com labels personalizáveis
 
-**Props:** `{ onBack: () => void; onCompanyClick?: (id: number) => void }`
+**Props:** `{ personId: number; onBack: () => void; onCompanyClick?: (id: number) => void; onGraphClick?: () => void }`
 
-### 4.4 PoliticianDetailScreen (`src/screens/PoliticianDetailScreen.tsx`) — NOVO
+### 4.4 PoliticianDetailScreen (`src/screens/PoliticianDetailScreen.tsx`)
 
 **Funcionalidades:**
 - Botão "Voltar para Resultados" (restaura tela anterior com contexto)
 - **Header:** Ícone gradiente índigo-roxo, nome, status, cargo e partido
-- **Ações:** "Exportar Dossiê" e "Ver Transações"
+- **Ações:** "Mapa de Conexões" (com `Share2`), "Exportar Dossiê" e "Ver Transações"
 - **Painel de Alertas & Suspeitas:** Cards com indicador vermelho/laranja/amarelo
 - **4 StatCards:** Cargo Atual, Salário, Patrimônio, Data de Nascimento
 - **Biografia:** Texto completo do político
@@ -185,14 +196,14 @@ navEntries    // Array completo do histórico (para exibir UI)
 - **Sidebar de Contato:** E-mail, telefone, endereço
 - **Sidebar de Empresas Ligadas:** Cards clicáveis → CompanyDetailScreen, com badge de relação (suspeita em vermelho/laranja)
 
-**Props:** `{ politician: PoliticianDetail; onBack: () => void; onCompanyClick: (id: number) => void }`
+**Props:** `{ politician: PoliticianDetail; onBack: () => void; onCompanyClick: (id: number) => void; onGraphClick?: () => void }`
 
-### 4.5 CompanyDetailScreen (`src/screens/CompanyDetailScreen.tsx`) — NOVO
+### 4.5 CompanyDetailScreen (`src/screens/CompanyDetailScreen.tsx`)
 
 **Funcionalidades:**
 - Botão "Voltar para Resultados" (restaura tela anterior com contexto)
 - **Header:** Ícone gradiente azul-indigo, nome, status, setor
-- **Ações:** "Exportar Relatório" e "Ver Contratos"
+- **Ações:** "Mapa de Conexões" (com `Share2`), "Exportar Relatório" e "Ver Contratos"
 - **Painel de Alertas & Suspeitas:** Cards com indicador vermelho/laranja/amarelo
 - **4 StatCards:** CNPJ, Faturamento Anual, Valor de Mercado, Funcionários
 - **Contratos com Órgãos Públicos:** Tabela com ano, órgão, descrição e valor (expansível)
@@ -202,7 +213,7 @@ navEntries    // Array completo do histórico (para exibir UI)
 - **Sidebar de Contato:** E-mail, telefone, endereço
 - **Card de Data de Criação**
 
-**Props:** `{ company: CompanyDetail; onBack: () => void; onPoliticianClick: (id: number) => void }`
+**Props:** `{ company: CompanyDetail; onBack: () => void; onPoliticianClick: (id: number) => void; onGraphClick?: () => void }`
 
 ### 4.6 NetworkGraphScreen (`src/screens/NetworkGraphScreen.tsx`) — NOVO
 
@@ -308,8 +319,6 @@ Card lateral de informações de contato.
 - `CompanyDetail` — Interface completa com alerts, partners, politicians, suspiciousContracts
 
 ### Objetos de exemplo
-- `mockCompanyData` — TechNova Soluções S.A. (3 políticos, 3 sócios)
-- `mockPersonData` — Roberto Alves (3 empresas ligadas, 2 pessoas ligadas)
 - `mockPoliticians` — `Record<number, PoliticianDetail>` com dados expandidos de:
   - **Roberto Alves** (id:1) — Deputado Estadual PMB, 3 alertas, 4 cargos, 3 processos, 3 empresas
   - **João Silveira** (id:2) — Senador PSD, 3 alertas, 4 cargos, 3 processos, 3 empresas
@@ -345,6 +354,7 @@ Card lateral de informações de contato.
 - [x] Clique em políticos na CompanyDetailScreen → PoliticianDetailScreen
 - [x] Clique em empresas na PoliticianDetailScreen → CompanyDetailScreen
 - [x] Botão "Mapa de Conexões" nos dashboards (CompanyDashboard e PersonDashboard)
+- [x] Botão "Mapa de Conexões" nas telas de detalhe (PoliticianDetailScreen e CompanyDetailScreen)
 - [x] Clique em nós do grafo → navega para tela de detalhes
 
 ### Visualização de Grafo
@@ -362,7 +372,13 @@ Card lateral de informações de contato.
 - [x] Tabelas de contratos suspeitos com valores
 - [x] Seções expansíveis (carreira, processos, contratos)
 - [x] Sidebar de empresas ligadas com badges de relação
+- [x] Indicador visual de clique (seta `ChevronRight`) nas linhas clicáveis das tabelas (opacidade `group-hover:opacity-100` + deslocamento)
+- [x] Modal de confirmação (`ConfirmDialog`) antes de navegar/pesquisar com filtros ativos ou limpar todos os filtros
+- [x] Busca textual com scoring inteligente (nome exato, CNPJ, contém, começa com, cargo)
+- [x] Histórico de buscas recentes salvo em localStorage (`useSearchHistory`, máx. 8 itens)
+- [x] Validação de schema do `ViewState` ao carregar histórico do localStorage (`isValidEntry`)
 - [x] Design responsivo com hover states e transições
+- [x] Diálogo `ConfirmDialog` reutilizável com 3 variantes (warning, danger, info), suporte a tecla Escape e acessibilidade (`role="dialog"`, `aria-modal`)
 
 ---
 
@@ -370,7 +386,7 @@ Card lateral de informações de contato.
 
 - 🔲 **Integração com API real** — Substituir dados mockados por chamadas a API de dados públicos
 - 🔲 **React Router** — Substituir roteamento por estado para suportar URLs diretas e histórico
-- 🔲 **Histórico de buscas** — Salvar buscas recentes no localStorage
+- [x] **Histórico de buscas** — Salvo no localStorage via `useSearchHistory` (máx. 8 itens, com remoção individual)
 - 🔲 **Exportação de relatório/dossiê** — Implementar funcionalidade dos botões existentes
 - 🔲 **Autenticação** — Login para salvar investigações
 - 🔲 **Testes unitários** — Adicionar testes para componentes e navegação
