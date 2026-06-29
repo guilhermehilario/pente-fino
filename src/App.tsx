@@ -1,4 +1,5 @@
 import { useNavigationHistory, type ViewState } from './hooks/useNavigationHistory';
+import { useSearchHistory } from './hooks/useSearchHistory';
 import { SearchScreen } from './screens/SearchScreen';
 import { CompanyDashboard } from './screens/CompanyDashboard';
 import { PersonDashboard } from './screens/PersonDashboard';
@@ -73,15 +74,24 @@ function searchEntity(query: string): { type: 'company'; companyId: number } | {
 
 function App() {
   const { current, push, back, reset } = useNavigationHistory({ type: 'search' });
+  const { searchHistory, addSearch, removeSearch, clearHistory } = useSearchHistory();
 
   const handleSearch = (query: string) => {
+    addSearch(query);
     push(searchEntity(query));
   };
 
   const renderView = () => {
     switch (current.type) {
       case 'search':
-        return <SearchScreen onSearch={handleSearch} />;
+        return (
+          <SearchScreen
+            onSearch={handleSearch}
+            searchHistory={searchHistory}
+            onRemoveSearch={removeSearch}
+            onClearHistory={clearHistory}
+          />
+        );
 
       case 'company':
         return (

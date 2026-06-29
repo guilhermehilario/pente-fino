@@ -108,9 +108,11 @@ navEntries    // Array completo do histórico (para exibir UI)
 
 ### Persistência
 
-- Histórico salvo em `localStorage` na chave `pega-corrupcao-nav-history`
+- Histórico salvo em `localStorage` na chave `` `pega-corrupcao-nav-history-v{STORAGE_VERSION}` ``
+- **Versão atual do schema:** `STORAGE_VERSION = 2` 🔄 *(incrementar ao alterar ViewState)*
 - Máximo de 50 entradas na stack
 - Tratamento de erros: dados corrompidos são ignorados, armazenamento cheio faz trim automático
+- Validação de schema: entradas carregadas passam por `isValidEntry()` — entradas com campos ausentes ou tipos desconhecidos são descartadas
 - Ao recarregar a página, a última sessão é restaurada automaticamente
 
 ### Lógica de busca

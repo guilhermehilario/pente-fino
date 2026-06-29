@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp } from 'lucide-react';
+import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp, X, Clock } from 'lucide-react';
 import { buttons, inputs, texts, containers, cards } from '../globalStyle';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
@@ -31,7 +31,14 @@ const FILTER_COUNT = (filters: Record<string, string[]>) =>
 
 type DialogMode = 'search' | 'clear';
 
-export function SearchScreen({ onSearch }: { onSearch: (query: string) => void }) {
+interface SearchScreenProps {
+  onSearch: (query: string) => void;
+  searchHistory: string[];
+  onRemoveSearch: (query: string) => void;
+  onClearHistory: () => void;
+}
+
+export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearHistory }: SearchScreenProps) {
   const [query, setQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -173,6 +180,55 @@ export function SearchScreen({ onSearch }: { onSearch: (query: string) => void }
             </div>
           </div>
         </form>
+
+        {/* Histórico de buscas */}
+        {searchHistory.length > 0 && (
+          <div className="mt-8 max-w-2xl mx-auto text-left">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <Clock size={14} /> Buscas Recentes
+              </h3>
+              <button
+                onClick={onClearHistory}
+                className="text-[11px] text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-wider font-medium"
+              >
+                Limpar
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {searchHistory.map((item) => (
+                <div
+                  key={item}
+                  className="group flex items-center gap-1 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 rounded-full pl-3 pr-1 py-1.5 transition-all cursor-pointer"
+                  onClick={() => {
+                    setQuery(item);
+                    if (hasActiveFilters) {
+                      setPendingQuery(item);
+                      setDialogMode('search');
+                      setShowConfirmDialog(true);
+                    } else {
+                      onSearch(item);
+                    }
+                  }}
+                >
+                  <Clock size={12} className="text-slate-500 shrink-0" />
+                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors truncate max-w-[180px]">{item}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveSearch(item);
+                    }}
+                    className="p-1 rounded-full text-slate-600 hover:text-slate-300 hover:bg-slate-700/50 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                    title="Remover"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {Object.values(selectedFilters).some(arr => arr.length > 0) && (
           <div className="flex flex-wrap items-center justify-center gap-2 mt-6 animate-in fade-in slide-in-from-top-2">
