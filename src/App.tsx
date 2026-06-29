@@ -5,7 +5,9 @@ import { PersonDashboard } from './screens/PersonDashboard';
 import { PoliticianDetailScreen } from './screens/PoliticianDetailScreen';
 import { CompanyDetailScreen } from './screens/CompanyDetailScreen';
 import { NetworkGraphScreen } from './screens/NetworkGraphScreen';
-import { mockPoliticians, mockCompanies } from './data/mockData';/** Busca o melhor resultado correspondente nos dados mockados. */
+import { mockPoliticians, mockCompanies } from './data/mockData';
+
+/** Busca o melhor resultado correspondente nos dados mockados. */
 function searchEntity(query: string): { type: 'company'; companyId: number } | { type: 'person'; personId: number } {
   const q = query.toLowerCase().trim();
   if (!q) return { type: 'company', companyId: 1 };
@@ -28,8 +30,8 @@ function searchEntity(query: string): { type: 'company'; companyId: number } | {
     const cnpjClean = c.cnpj.replace(/\D/g, '');
 
     let score = 0;
-    if (nameLow === q) score = 100;              // nome exato
-    else if (nameLow.includes(q)) score = 80;     // nome contém
+    if (nameLow === q) score = 100;                                // nome exato
+    else if (q.length >= 2 && nameLow.includes(q)) score = 80;     // nome contém (mín. 2 chars)
     else if (cnpjClean === digitsOnly && digitsOnly.length >= 8) score = 90;  // CNPJ exato
     else if (q.length >= 3 && nameLow.split(' ').some((w) => w.startsWith(q))) score = 50; // palavra começa com
     if (score > 0) matches.push({ id: c.id, type: 'company', score });
@@ -41,8 +43,8 @@ function searchEntity(query: string): { type: 'company'; companyId: number } | {
 
     let score = 0;
     if (nameLow === q) score = 100;
-    else if (nameLow.includes(q)) score = 80;
-    else if (p.role.toLowerCase().includes(q)) score = 40;  // cargo
+    else if (q.length >= 2 && nameLow.includes(q)) score = 80;    // nome contém (mín. 2 chars)
+    else if (q.length >= 3 && p.role.toLowerCase().includes(q)) score = 40;  // cargo (mín. 3 chars)
     else if (q.length >= 3 && nameLow.split(' ').some((w) => w.startsWith(q))) score = 50;
     if (score > 0) matches.push({ id: p.id, type: 'person', score });
   }

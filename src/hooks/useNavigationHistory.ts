@@ -21,7 +21,9 @@ interface NavEntry {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'pega-corrupcao-nav-history';
+// Incrementada sempre que o schema do ViewState muda (ex: adicionar companyId/personId)
+const STORAGE_VERSION = 2;
+const STORAGE_KEY = `pega-corrupcao-nav-history-v${STORAGE_VERSION}`;
 const MAX_ENTRIES = 50;
 
 function resolveTitle(view: ViewState): string {
