@@ -32,48 +32,91 @@ pega-corrupcao/
 ├── vite.config.ts
 ├── tsconfig.json / tsconfig.app.json / tsconfig.node.json
 ├── eslint.config.js
-├── README.md                        # README genérico do Vite (não reflete o projeto)
+├── README.md
 ├── CONTEXT_PROJECT.md               ← Este documento
 └── src/
-    ├── main.tsx                     # Entry point
-    ├── App.tsx                      # Roteador de estado simples
-    ├── App.css                      # (Não usado — manter ou remover)
+    ├── main.tsx
+    ├── App.tsx                      # Roteador com stack de navegação
     ├── index.css                    # Tema Tailwind + animação scanner
+    ├── hooks/
+    │   └── useNavigationHistory.ts  # Hook de navegação em stack + localStorage
     ├── data/
-    │   └── mockData.ts              # Dados mockados de exemplo
+    │   ├── mockData.ts              # Dados mockados + tipos expandidos
+    │   └── graphData.ts             # Transformação de dados para grafo (NOVO)
     ├── globalStyle/
-    │   ├── index.ts                 # Re-exporta todos os estilos
-    │   ├── buttonStyle.ts           # Classes Tailwind para botões
-    │   ├── inputStyle.ts            # Classes Tailwind para inputs
-    │   ├── textStyle.ts             # Classes Tailwind para tipografia
-    │   ├── containerStyle.ts        # Classes Tailwind para containers/layout
-    │   ├── cardStyle.ts             # Classes Tailwind para cards
-    │   └── tableStyle.ts            # Classes Tailwind para tabelas
+    │   ├── index.ts
+    │   ├── buttonStyle.ts
+    │   ├── inputStyle.ts
+    │   ├── textStyle.ts
+    │   ├── containerStyle.ts
+    │   ├── cardStyle.ts
+    │   └── tableStyle.ts
     ├── components/
     │   └── ui/
-    │       ├── StatCard.tsx         # Card de estatística reutilizável
-    │       └── ContactInfoCard.tsx  # Card de contato reutilizável
+    │       ├── StatCard.tsx
+    │       └── ContactInfoCard.tsx
     └── screens/
-        ├── SearchScreen.tsx         # Tela inicial de busca
-        ├── CompanyDashboard.tsx     # Dashboard de empresa
-        └── PersonDashboard.tsx      # Dashboard de pessoa/político
+        ├── SearchScreen.tsx
+        ├── CompanyDashboard.tsx
+        ├── PersonDashboard.tsx
+        ├── PoliticianDetailScreen.tsx
+        ├── CompanyDetailScreen.tsx
+        └── NetworkGraphScreen.tsx   # Mapa de Conexões (NOVO)
 ```
 
 ---
 
 ## 3. Arquitetura de Roteamento
 
-O projeto **não usa React Router**. O roteamento é feito via estado simples no `App.tsx`:
+O projeto **não usa React Router**. O roteamento é gerenciado pelo hook `useNavigationHistory` (`src/hooks/useNavigationHistory.ts`), que implementa uma **stack de navegação** persistida em `localStorage`.
 
-```tsx
-const [currentView, setCurrentView] = useState<'search' | 'company' | 'person'>('search');
+### ViewState
+
+Tipos de view são uma discriminated union simples — sem `parentView` ou qualquer contexto extra:
+
+```typescript
+export type ViewState =
+  | { type: 'search' }
+  | { type: 'company' }
+  | { type: 'person' }
+  | { type: 'company-detail'; companyId: number }
+  | { type: 'politician-detail'; politicianId: number }
+  | { type: 'graph'; centerType?: 'politician' | 'company'; centerId?: number };
 ```
 
-A lógica de navegação é:
-- **SearchScreen** → usuário digita → `onSearch(query)` no App
-- Se a query contém `"roberto"`, `"alves"` ou `"deputado"` → vai para **PersonDashboard**
-- Caso contrário → vai para **CompanyDashboard**
-- Ambos os dashboards têm botão "Voltar para a Busca" que chama `onBack()`
+### Hook `useNavigationHistory`
+
+```typescript
+const { current, canGoBack, navEntries, push, back, goTo, reset } = useNavigationHistory(initialView);
+
+push(view)    // Navega para uma nova view (empilha)
+back()        // Volta uma posição na stack
+goTo(index)   // Pula para um índice específico do histórico
+reset()       // Limpa tudo e volta para a view inicial
+canGoBack     // true se há páginas anteriores na stack
+navEntries    // Array completo do histórico (para exibir UI)
+```
+
+### Fluxo
+
+| Origem | Ação | Destino | Stack após ação |
+|---|---|---|---|
+| SearchScreen | Pesquisa → | CompanyDashboard | `[search, company]` |
+| CompanyDashboard | Clique político → | PoliticianDetailScreen | `[search, company, politician-detail(id)]` |
+| PoliticianDetailScreen | Voltar → | CompanyDashboard | `[search, company]` |
+| PoliticianDetailScreen | Clique empresa → | CompanyDetailScreen | `[search, company, politician-detail(id), company-detail(id)]` |
+
+### Persistência
+
+- Histórico salvo em `localStorage` na chave `pega-corrupcao-nav-history`
+- Máximo de 50 entradas na stack
+- Tratamento de erros: dados corrompidos são ignorados, armazenamento cheio faz trim automático
+- Ao recarregar a página, a última sessão é restaurada automaticamente
+
+### Lógica de busca
+
+- Query contém `"roberto"`, `"alves"` ou `"deputado"` → **PersonDashboard**
+- Caso contrário → **CompanyDashboard**
 
 ---
 
@@ -94,7 +137,7 @@ A lógica de navegação é:
   - **Ano de acontecimento:** 2026, 2025, 2024, 2023, 2022
 - Filtros selecionados aparecem como badges removíveis acima do painel
 - Botão "Limpar todos" para remover todos os filtros ativos
-- Layout centralizado vertical e horizontalmente (`min-h-screen flex flex-col items-center justify-center`)
+- Layout centralizado vertical e horizontalmente
 
 **Props:** `{ onSearch: (query: string) => void }`
 
@@ -104,35 +147,93 @@ A lógica de navegação é:
 - Botão "Voltar para a Busca" no topo
 - **Header:** Ícone gradiente azul-indigo, nome da empresa, status badge (Ativa), categoria
 - **Ações:** Botões "Exportar Relatório" e "Ver Detalhes"
-- **4 StatCards:**
-  - CNPJ
-  - Valor de Mercado Estimado (ícone verde)
-  - Data de Criação (ícone roxo)
-  - Políticos Ligados (ícone laranja)
+- **4 StatCards:** CNPJ, Valor de Mercado, Data de Criação, Políticos Ligados
 - **Tabela com abas:**
-  - Aba "Políticos": Nome (com avatar inicial), Cargo/Função (badge), Partido
-  - Aba "Sócios": Nome do Sócio (com avatar inicial), Qualificação (badge), Participação
+  - Aba "Políticos": Nome (com avatar), Cargo/Função (badge), Partido — **clicável → PoliticianDetailScreen**
+  - Aba "Sócios": Nome (com avatar), Qualificação (badge), Participação
 - **Sidebar:** Card de Contato com e-mail, telefone e endereço
 
-**Dados mockados:** `mockCompanyData` — TechNova Soluções S.A., 3 políticos ligados, 3 sócios
+**Props:** `{ onBack: () => void; onPoliticianClick?: (id: number) => void }`
 
 ### 4.3 PersonDashboard (`src/screens/PersonDashboard.tsx`)
 
 **Funcionalidades:**
 - Botão "Voltar para a Busca" no topo
-- **Header:** Ícone gradiente índigo-roxo, nome da pessoa, status badge (Ativo), tag "Agente Público"
+- **Header:** Ícone gradiente índigo-roxo, nome da pessoa, status badge (Ativo), "Agente Público"
 - **Ações:** Botões "Exportar Dossiê" e "Ver Transações"
-- **4 StatCards:**
-  - Cargo Atual (ícone azul)
-  - Salário Bruto (ícone verde)
-  - Patrimônio Declarado (ícone roxo)
-  - Empresas Ligadas (ícone laranja)
+- **4 StatCards:** Cargo Atual, Salário Bruto, Patrimônio Declarado, Empresas Ligadas
 - **Tabela com abas:**
-  - Aba "Empresas": Nome da empresa (com ícone), CNPJ, Relação/Vínculo
-  - Aba "Pessoas": Nome da pessoa (com avatar inicial), Cargo (badge), Relação/Vínculo
-- **Sidebar:** Card de Contato com labels personalizáveis (E-mail Gabinete, Endereço Gabinete)
+  - Aba "Empresas": Nome (com ícone), CNPJ, Relação/Vínculo — **clicável → CompanyDetailScreen**
+  - Aba "Pessoas": Nome (com avatar), Cargo (badge), Relação/Vínculo
+- **Sidebar:** Card de Contato com labels personalizáveis
 
-**Dados mockados:** `mockPersonData` — Roberto Alves, Deputado Estadual, 3 empresas ligadas, 2 pessoas ligadas
+**Props:** `{ onBack: () => void; onCompanyClick?: (id: number) => void }`
+
+### 4.4 PoliticianDetailScreen (`src/screens/PoliticianDetailScreen.tsx`) — NOVO
+
+**Funcionalidades:**
+- Botão "Voltar para Resultados" (restaura tela anterior com contexto)
+- **Header:** Ícone gradiente índigo-roxo, nome, status, cargo e partido
+- **Ações:** "Exportar Dossiê" e "Ver Transações"
+- **Painel de Alertas & Suspeitas:** Cards com indicador vermelho/laranja/amarelo
+- **4 StatCards:** Cargo Atual, Salário, Patrimônio, Data de Nascimento
+- **Biografia:** Texto completo do político
+- **Carreira Política:** Timeline vertical com ano, cargo e descrição (expansível)
+- **Processos & Investigações:** Lista com ano, tipo, status e descrição (expansível)
+- **Sidebar de Contato:** E-mail, telefone, endereço
+- **Sidebar de Empresas Ligadas:** Cards clicáveis → CompanyDetailScreen, com badge de relação (suspeita em vermelho/laranja)
+
+**Props:** `{ politician: PoliticianDetail; onBack: () => void; onCompanyClick: (id: number) => void }`
+
+### 4.5 CompanyDetailScreen (`src/screens/CompanyDetailScreen.tsx`) — NOVO
+
+**Funcionalidades:**
+- Botão "Voltar para Resultados" (restaura tela anterior com contexto)
+- **Header:** Ícone gradiente azul-indigo, nome, status, setor
+- **Ações:** "Exportar Relatório" e "Ver Contratos"
+- **Painel de Alertas & Suspeitas:** Cards com indicador vermelho/laranja/amarelo
+- **4 StatCards:** CNPJ, Faturamento Anual, Valor de Mercado, Funcionários
+- **Contratos com Órgãos Públicos:** Tabela com ano, órgão, descrição e valor (expansível)
+- **Tabela com abas:**
+  - Aba "Sócios": Nome (com avatar), Qualificação (badge), Participação
+  - Aba "Políticos": Nome (com avatar), Cargo/Partido (badge), Relação — **clicável → PoliticianDetailScreen**
+- **Sidebar de Contato:** E-mail, telefone, endereço
+- **Card de Data de Criação**
+
+**Props:** `{ company: CompanyDetail; onBack: () => void; onPoliticianClick: (id: number) => void }`
+
+### 4.6 NetworkGraphScreen (`src/screens/NetworkGraphScreen.tsx`) — NOVO
+
+**Funcionalidades:**
+- Visualização interativa de grafo de conexões entre políticos e empresas (via `react-force-graph-2d`)
+- Suporta visualização completa e modo **focado** (centrado em uma entidade específica com profundidade configurável)
+- **Nós:** Políticos em indigo, Empresas em azul — tamanho proporcional à relevância
+- **Arestas:** Cor codificada por severidade (vermelho=alta, laranja=média, cinza=baixa); setas direcionais; labels com nome da relação
+- **Interações:** Arrastar nós, scroll para zoom, clique em nó → navega para detalhes da entidade, hover mostra tooltip
+- **Busca textual** no grafo (filtra nós por nome/subtitulo)
+- **Filtro por tipo:** Todos, Políticos ou Empresas
+- **Barra de controles:** Zoom para ajuste, zoom out, resetar visão
+- **Legenda lateral** explicando cores de nós e arestas
+- **Contador** de nós e conexões (rodapé do canvas)
+- **Modo focado:** Ao acessar de um dashboard, o grafo centraliza na entidade visualizada (ex: CompanyDashboard → grafo centrado na empresa)
+- **Navegação:** Clique em qualquer nó → redireciona para a tela de detalhes da entidade (politician-detail ou company-detail)
+
+**Dependência externa:** `react-force-graph-2d` (v1.29.1)
+
+**Dados do grafo:** Geração automática via `src/data/graphData.ts`:
+- `buildFullGraph()` — Constrói grafo completo com todas as entidades e conexões
+- `buildFocusedGraph(type, id, maxDepth)` — Constrói subgrafo BFS centrado em uma entidade até `maxDepth` níveis de profundidade
+- Deduplicação de arestas por chave canônica (source < target)
+
+**Props:**
+```typescript
+interface NetworkGraphScreenProps {
+  initialCenter?: { type: 'politician' | 'company'; id: number };
+  onBack: () => void;
+  onPoliticianClick: (id: number) => void;
+  onCompanyClick: (id: number) => void;
+}
+```
 
 ---
 
@@ -200,63 +301,90 @@ Card lateral de informações de contato.
 
 ## 7. Dados Mockados (`src/data/mockData.ts`)
 
-Dois objetos de exemplo:
+### Tipos exportados
+- `PoliticianDetail` — Interface completa com alerts, politicalCareer, legalProcesses, linkedCompanies
+- `CompanyDetail` — Interface completa com alerts, partners, politicians, suspiciousContracts
 
-### `mockCompanyData`
-- `name`: "TechNova Soluções S.A."
-- `cnpj`, `marketValue`, `creationDate`, `status`, `email`, `phone`, `address`
-- `politicians[]`: 3 políticos (Roberto Alves, João Silveira, Maria Costa)
-- `partners[]`: 3 sócios
-
-### `mockPersonData`
-- `name`: "Roberto Alves"
-- `role`, `salary`, `wealth`, `status`, `email`, `phone`, `address`
-- `linkedCompanies[]`: 3 empresas (TechNova, Construtora Horizonte, AgroPecuária Alves)
-- `linkedPeople[]`: 2 pessoas (Maria Costa, Carlos Eduardo Mendes)
+### Objetos de exemplo
+- `mockCompanyData` — TechNova Soluções S.A. (3 políticos, 3 sócios)
+- `mockPersonData` — Roberto Alves (3 empresas ligadas, 2 pessoas ligadas)
+- `mockPoliticians` — `Record<number, PoliticianDetail>` com dados expandidos de:
+  - **Roberto Alves** (id:1) — Deputado Estadual PMB, 3 alertas, 4 cargos, 3 processos, 3 empresas
+  - **João Silveira** (id:2) — Senador PSD, 3 alertas, 4 cargos, 3 processos, 3 empresas
+  - **Maria Costa** (id:3) — Prefeita MDB, 3 alertas, 4 cargos, 2 processos, 2 empresas
+- `mockCompanies` — `Record<number, CompanyDetail>` com dados expandidos de:
+  - **TechNova Soluções S.A.** (id:1) — TI, 3 alertas, 3 sócios, 3 políticos, 4 contratos
+  - **Construtora Horizonte** (id:2) — Construção Civil, 2 alertas, 2 sócios, 1 político, 2 contratos
+  - **AgroPecuária Alves** (id:3) — Agronegócio, 1 alerta, 2 sócios, 1 político, 1 contrato
+  - **Construtora Silveira Ltda.** (id:4) — Construção Civil, 2 alertas, 2 sócios, 1 político, 3 contratos
+  - **AgroNorte S.A.** (id:5) — Agronegócio, 2 alertas, 2 sócios, 1 político, 1 contrato
+  - **SaúdePrimeira Serviços Ltda.** (id:6) — Saúde, 2 alertas, 2 sócios, 1 político, 1 contrato
 
 ---
 
 ## 8. Funcionalidades Implementadas (Resumo)
 
-- [x] Tela de busca com campo de texto e botão de pesquisa
-- [x] Painel de filtros avançados com 4 categorias expansíveis
-- [x] Badges de filtros ativos com remoção individual e "Limpar todos"
-- [x] Upload de arquivos locais (.txt, .json, .md)
-- [x] Logo com identidade visual "PenteFino" e animação de scanner
-- [x] Dashboard de empresa com 4 stat cards + tabela de políticos/sócios
-- [x] Dashboard de pessoa/político com 4 stat cards + tabela de empresas/pessoas ligadas
-- [x] Cards de contato reutilizáveis
+### Telas
+- [x] **SearchScreen** — Busca, filtros avançados, upload de arquivos
+- [x] **CompanyDashboard** — Visão geral da empresa com tabelas de políticos e sócios
+- [x] **PersonDashboard** — Visão geral da pessoa com tabelas de empresas e pessoas ligadas
+- [x] **PoliticianDetailScreen** — Detalhamento completo com alertas, biografia, carreira, processos, empresas ligadas (acessível clicando em político nas tabelas)
+- [x] **CompanyDetailScreen** — Detalhamento completo com alertas, contratos suspeitos, sócios e políticos ligados (acessível clicando em empresa nas tabelas)
+- [x] **NetworkGraphScreen** — Mapa interativo de conexões entre políticos e empresas via react-force-graph-2d
+
+### Navegação
+- [x] Roteamento via stack persistida em localStorage (`useNavigationHistory`)
+- [x] Histórico completo preservado entre sessões (recarregar a página restaura o estado)
+- [x] Navegação para trás múltiplos níveis (back repetido percorre a stack)
+- [x] Suporte a `push`, `back`, `goTo(index)` e `reset`
+- [x] Botões "Voltar" em todas as telas de detalhe
+- [x] Clique em políticos na CompanyDashboard → PoliticianDetailScreen
+- [x] Clique em empresas na PersonDashboard → CompanyDetailScreen
+- [x] Clique em políticos na CompanyDetailScreen → PoliticianDetailScreen
+- [x] Clique em empresas na PoliticianDetailScreen → CompanyDetailScreen
+- [x] Botão "Mapa de Conexões" nos dashboards (CompanyDashboard e PersonDashboard)
+- [x] Clique em nós do grafo → navega para tela de detalhes
+
+### Visualização de Grafo
+- [x] Grafo interativo com nós (políticos/empresas) e arestas codificadas por severidade
+- [x] Modo completo e modo focado (centrado em entidade específica)
+- [x] Busca textual, filtro por tipo, zoom, arrastar nós
+- [x] Legenda lateral de cores
+- [x] Geração automática de dados do grafo via BFS (graphData.ts)
+
+### UI/UX
 - [x] Tema escuro consistente (slate-900)
-- [x] Design responsivo
-- [x] Transições e micro-interações (hover states, animações)
-- [x] Sistema de estilo centralizado em constantes Tailwind
+- [x] Sistema de alertas com código de cores (vermelho/laranja/amarelo)
+- [x] Timeline de carreira política
+- [x] Painel de processos judiciais com status
+- [x] Tabelas de contratos suspeitos com valores
+- [x] Seções expansíveis (carreira, processos, contratos)
+- [x] Sidebar de empresas ligadas com badges de relação
+- [x] Design responsivo com hover states e transições
 
 ---
 
-## 9. Próximos Passos Sugeridos (Não Implementados)
+## 9. Próximos Passos Sugeridos
 
-Com base na estrutura atual, estas são as próximas evoluções lógicas:
-
-- 🔲 **Integração com API real** — Substituir dados mockados por chamadas a uma API de dados públicos (CNPJ, TSE, etc.)
-- 🔲 **Rotas via React Router** — Substituir roteamento por estado por React Router para suportar URLs diretas e navegação com histórico
-- 🔲 **Detalhamento de pessoa/empresa** — Tela de detalhes clicável nas tabelas (links para páginas específicas)
+- 🔲 **Integração com API real** — Substituir dados mockados por chamadas a API de dados públicos
+- 🔲 **React Router** — Substituir roteamento por estado para suportar URLs diretas e histórico
 - 🔲 **Histórico de buscas** — Salvar buscas recentes no localStorage
-- 🔲 **Exportação de relatório** — Implementar a funcionalidade dos botões "Exportar Relatório" / "Exportar Dossiê"
-- 🔲 **Gráficos e visualizações** — Adicionar gráficos de conexões (redes/grafos) entre entidades
-- 🔲 **Autenticação** — Sistema de login para salvar investigações
-- 🔲 **Testes** — Adicionar testes unitários e de integração
-- 🔲 **Página inicial institucional** — Landing page antes da tela de busca
+- 🔲 **Exportação de relatório/dossiê** — Implementar funcionalidade dos botões existentes
+- 🔲 **Autenticação** — Login para salvar investigações
+- 🔲 **Testes unitários** — Adicionar testes para componentes e navegação
+- 🔲 **Página inicial** — Landing page institucional antes da busca
 
 ---
 
 ## 10. Convenções de Código
 
-- **Nomenclatura:** Arquivos em PascalCase para componentes (`SearchScreen.tsx`), camelCase para utilitários (`mockData.ts`)
+- **Nomenclatura:** PascalCase para componentes (`CompanyDetailScreen.tsx`), camelCase para utilitários
 - **Imports:** Agrupados por tipo (React, bibliotecas, internos)
-- **Tipagem:** Props sempre tipadas com `interface` ou `type`
-- **Estilo:** Nunca usar CSS modules ou styled-components — sempre Tailwind via constantes em `globalStyle/`
-- **Exportações:** Nomeadas (não `export default`)
-- **Estado local:** `useState` para tabs, filtros e view atual
+- **Tipagem:** Props sempre tipadas com `interface` ou `type`; estado de navegação com discriminated union
+- **Estilo:** Apenas Tailwind via constantes em `globalStyle/` (sem CSS modules ou styled-components)
+- **Exportações:** Nomeadas (sem `export default`)
+- **Navegação:** Usar `useNavigationHistory` hook (stack + localStorage); `push()` para avançar, `back()` para voltar
+- **Dados mockados:** Tipos reutilizáveis (`PoliticianDetail`, `CompanyDetail`) para facilitar migração para API
 
 ---
 

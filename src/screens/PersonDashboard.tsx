@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import {
   ArrowUpRight, ShieldCheck, MapPin, Landmark,
-  ArrowLeft, Briefcase, Wallet, Building, Users
+  ArrowLeft, Briefcase, Wallet, Building, Users, Share2
 } from 'lucide-react';
 import { mockPersonData } from '../data/mockData';
 import { StatCard } from '../components/ui/StatCard';
 import { ContactInfoCard } from '../components/ui/ContactInfoCard';
 import { buttons, texts, containers, tables } from '../globalStyle';
 
-export function PersonDashboard({ onBack, onCompanyClick }: { onBack: () => void; onCompanyClick?: (id: number) => void }) {
+export function PersonDashboard({ onBack, onCompanyClick, onGraphClick }: { onBack: () => void; onCompanyClick?: (id: number) => void; onGraphClick?: () => void }) {
   const [activeTab, setActiveTab] = useState<'companies' | 'people'>('companies');
 
   return (
@@ -39,8 +39,11 @@ export function PersonDashboard({ onBack, onCompanyClick }: { onBack: () => void
             </div>
           </div>
           <div className={containers.dashboardHeaderRight}>
-            <button className={buttons.secondary}>
-              Exportar Dossiê
+            <button
+              onClick={onGraphClick}
+              className={`${buttons.secondary} flex items-center gap-2`}
+            >
+              <Share2 size={16} /> Mapa de Conexões
             </button>
             <button className={buttons.dashboardPrimaryIndigo}>
               Ver Transações <ArrowUpRight size={16} />

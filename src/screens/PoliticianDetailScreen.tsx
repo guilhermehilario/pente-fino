@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   ArrowLeft, Landmark, ShieldCheck, Briefcase, Wallet, Calendar,
-  AlertTriangle, Gavel, Building2, ChevronDown, ChevronUp,
+  Gavel, Building2, ChevronDown, ChevronUp,
   ExternalLink, Mail, Phone, MapPin, Award, UserCheck, FileWarning
 } from 'lucide-react';
 import type { PoliticianDetail } from '../data/mockData';

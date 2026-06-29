@@ -1,108 +1,91 @@
-import { useState } from 'react';
+import { useNavigationHistory, type ViewState } from './hooks/useNavigationHistory';
 import { SearchScreen } from './screens/SearchScreen';
 import { CompanyDashboard } from './screens/CompanyDashboard';
 import { PersonDashboard } from './screens/PersonDashboard';
 import { PoliticianDetailScreen } from './screens/PoliticianDetailScreen';
 import { CompanyDetailScreen } from './screens/CompanyDetailScreen';
+import { NetworkGraphScreen } from './screens/NetworkGraphScreen';
 import { mockPoliticians, mockCompanies } from './data/mockData';
 
-type ViewState =
-  | { type: 'search' }
-  | { type: 'company' }
-  | { type: 'person' }
-  | { type: 'politician-detail'; politicianId: number; returnTo: 'company' | 'person' | 'company-detail' }
-  | { type: 'company-detail'; companyId: number; returnTo: 'person' | 'company-detail' };
-
 function App() {
-  const [view, setView] = useState<ViewState>({ type: 'search' });
+  const { current, push, back, reset } = useNavigationHistory({ type: 'search' });
 
   const handleSearch = (query: string) => {
     const q = query.toLowerCase();
-
     if (q.includes('roberto') || q.includes('alves') || q.includes('deputado')) {
-      setView({ type: 'person' });
+      push({ type: 'person' });
     } else {
-      setView({ type: 'company' });
-    }
-  };
-
-  const handleBackToSearch = () => {
-    setView({ type: 'search' });
-  };
-
-  const handlePoliticianClick = (politicianId: number, returnTo: ViewState['type']) => {
-    setView({ type: 'politician-detail', politicianId, returnTo: returnTo as 'company' | 'person' | 'company-detail' });
-  };
-
-  const handleCompanyClick = (companyId: number, returnTo: ViewState['type']) => {
-    setView({ type: 'company-detail', companyId, returnTo: returnTo as 'person' | 'company-detail' });
-  };
-
-  const handleBackFromDetail = () => {
-    if (view.type === 'politician-detail') {
-      if (view.returnTo === 'company') setView({ type: 'company' });
-      else if (view.returnTo === 'person') setView({ type: 'person' });
-      else if (view.returnTo === 'company-detail') setView({ type: 'company-detail', companyId: 1, returnTo: 'company-detail' });
-      else setView({ type: 'search' });
-    } else if (view.type === 'company-detail') {
-      if (view.returnTo === 'person') setView({ type: 'person' });
-      else setView({ type: 'search' });
-    } else {
-      setView({ type: 'search' });
+      push({ type: 'company' });
     }
   };
 
   const renderView = () => {
-    switch (view.type) {
+    switch (current.type) {
       case 'search':
         return <SearchScreen onSearch={handleSearch} />;
-      
+
       case 'company':
         return (
           <CompanyDashboard
-            onBack={handleBackToSearch}
-            onPoliticianClick={(id) => handlePoliticianClick(id, 'company')}
+            onBack={() => back()}
+            onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
+            onGraphClick={() => push({ type: 'graph', centerType: 'company', centerId: 1 })}
           />
         );
-      
+
       case 'person':
         return (
           <PersonDashboard
-            onBack={handleBackToSearch}
-            onCompanyClick={(id) => handleCompanyClick(id, 'person')}
+            onBack={() => back()}
+            onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}
+            onGraphClick={() => push({ type: 'graph', centerType: 'politician', centerId: 1 })}
           />
         );
-      
+
       case 'politician-detail': {
-        const politician = mockPoliticians[view.politicianId];
+        const politician = mockPoliticians[current.politicianId];
         if (!politician) {
-          setView({ type: 'search' });
+          reset();
           return null;
         }
         return (
           <PoliticianDetailScreen
             politician={politician}
-            onBack={handleBackFromDetail}
-            onCompanyClick={(id) => handleCompanyClick(id, 'company-detail')}
+            onBack={() => back()}
+            onCompanyClick={(companyId) => push({ type: 'company-detail', companyId })}
           />
         );
       }
-      
+
       case 'company-detail': {
-        const company = mockCompanies[view.companyId];
+        const company = mockCompanies[current.companyId];
         if (!company) {
-          setView({ type: 'search' });
+          reset();
           return null;
         }
         return (
           <CompanyDetailScreen
             company={company}
-            onBack={handleBackFromDetail}
-            onPoliticianClick={(id) => handlePoliticianClick(id, 'company-detail')}
+            onBack={() => back()}
+            onPoliticianClick={(politicianId) => push({ type: 'politician-detail', politicianId })}
           />
         );
       }
-      
+
+      case 'graph':
+        return (
+          <NetworkGraphScreen
+            initialCenter={
+              current.centerType && current.centerId
+                ? { type: current.centerType, id: current.centerId }
+                : undefined
+            }
+            onBack={() => back()}
+            onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
+            onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}
+          />
+        );
+
       default:
         return <SearchScreen onSearch={handleSearch} />;
     }

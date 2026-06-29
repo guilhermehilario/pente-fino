@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { 
   Building2, Calendar, DollarSign, FileText, Users, ArrowUpRight, 
-  ShieldCheck, Landmark, ArrowLeft 
+  ShieldCheck, Landmark, ArrowLeft, Share2
 } from 'lucide-react';
 import { mockCompanyData } from '../data/mockData';
 import { StatCard } from '../components/ui/StatCard';
 import { ContactInfoCard } from '../components/ui/ContactInfoCard';
 import { buttons, texts, containers, tables } from '../globalStyle';
 
-export function CompanyDashboard({ onBack, onPoliticianClick }: { onBack: () => void; onPoliticianClick?: (id: number) => void }) {
+export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { onBack: () => void; onPoliticianClick?: (id: number) => void; onGraphClick?: () => void }) {
   const [activeTab, setActiveTab] = useState<'politicians' | 'partners'>('politicians');
 
   return (
@@ -39,8 +39,11 @@ export function CompanyDashboard({ onBack, onPoliticianClick }: { onBack: () => 
             </div>
           </div>
           <div className={containers.dashboardHeaderRight}>
-            <button className={buttons.secondary}>
-              Exportar Relatório
+            <button
+              onClick={onGraphClick}
+              className={`${buttons.secondary} flex items-center gap-2`}
+            >
+              <Share2 size={16} /> Mapa de Conexões
             </button>
             <button className={buttons.dashboardPrimaryBlue}>
               Ver Detalhes <ArrowUpRight size={16} />
