@@ -1,6 +1,7 @@
 import React from 'react';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { cards, texts } from '../../globalStyle';
 
 interface ContactInfoCardProps {
   email: string;
@@ -28,38 +29,38 @@ export function ContactInfoCard({
   AddressIcon = MapPin,
 }: ContactInfoCardProps) {
   return (
-    <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 shadow-lg h-fit">
-      <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+    <div className={cards.contactInfoCard}>
+      <h2 className={texts.h2Section}>
         {headerIcon} Contato e Localização
       </h2>
       <div className="space-y-6">
         <div className="flex items-start gap-4">
-          <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
+          <div className={cards.contactIconWrapper}>
             <EmailIcon size={20} />
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-0.5">{emailLabel}</p>
-            <p className="text-slate-200 font-medium">{email}</p>
+            <p className={texts.contactLabel}>{emailLabel}</p>
+            <p className={texts.contactValue}>{email}</p>
           </div>
         </div>
 
         <div className="flex items-start gap-4">
-          <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
+          <div className={cards.contactIconWrapper}>
             <PhoneIcon size={20} />
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-0.5">{phoneLabel}</p>
-            <p className="text-slate-200 font-medium">{phone}</p>
+            <p className={texts.contactLabel}>{phoneLabel}</p>
+            <p className={texts.contactValue}>{phone}</p>
           </div>
         </div>
 
         <div className="flex items-start gap-4">
-          <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
+          <div className={cards.contactIconWrapper}>
             <AddressIcon size={20} />
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-0.5">{addressLabel}</p>
-            <p className="text-slate-200 font-medium leading-relaxed">{address}</p>
+            <p className={texts.contactLabel}>{addressLabel}</p>
+            <p className={texts.contactValueLong}>{address}</p>
           </div>
         </div>
       </div>
