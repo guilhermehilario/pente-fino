@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp } from 'lucide-react';
 import { buttons, inputs, texts, containers, cards } from '../globalStyle';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 const FILTER_CATEGORIES = [
   {
@@ -25,18 +26,61 @@ const FILTER_CATEGORIES = [
   }
 ];
 
+const FILTER_COUNT = (filters: Record<string, string[]>) =>
+  Object.values(filters).reduce((sum, arr) => sum + arr.length, 0);
+
+type DialogMode = 'search' | 'clear';
+
 export function SearchScreen({ onSearch }: { onSearch: (query: string) => void }) {
   const [query, setQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [dialogMode, setDialogMode] = useState<DialogMode>('search');
+  const [pendingQuery, setPendingQuery] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hasActiveFilters = Object.values(selectedFilters).some(arr => arr.length > 0);
+  const totalFilters = FILTER_COUNT(selectedFilters);
+
+  const executeSearch = useCallback((searchQuery: string) => {
+    if (searchQuery.trim()) {
+      onSearch(searchQuery.trim());
+    }
+  }, [onSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      onSearch(query.trim());
+    if (!query.trim()) return;
+
+    if (hasActiveFilters) {
+      setPendingQuery(query.trim());
+      setDialogMode('search');
+      setShowConfirmDialog(true);
+    } else {
+      executeSearch(query.trim());
     }
+  };
+
+  const handleClearAllClick = () => {
+    setDialogMode('clear');
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmAction = () => {
+    setShowConfirmDialog(false);
+    if (dialogMode === 'search') {
+      executeSearch(pendingQuery);
+    } else {
+      setSelectedFilters({});
+    }
+    setPendingQuery('');
+  };
+
+  const handleCancelDialog = () => {
+    setShowConfirmDialog(false);
+    setPendingQuery('');
   };
 
   const toggleFilter = (categoryId: string, option: string) => {
@@ -153,7 +197,7 @@ export function SearchScreen({ onSearch }: { onSearch: (query: string) => void }
               ))
             ))}
             <button 
-              onClick={() => setSelectedFilters({})}
+              onClick={handleClearAllClick}
               className="text-sm text-slate-400 hover:text-slate-200 transition-colors ml-2 font-medium"
             >
               Limpar todos
@@ -209,6 +253,22 @@ export function SearchScreen({ onSearch }: { onSearch: (query: string) => void }
             </div>
           </div>
         )}
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          open={showConfirmDialog}
+          title={dialogMode === 'search' ? 'Filtros ativos' : 'Limpar todos os filtros'}
+          description={
+            dialogMode === 'search'
+              ? `Você selecionou ${totalFilters} filtro(s). Deseja continuar com a pesquisa mantendo os filtros aplicados? Eles serão considerados na busca.`
+              : `Você tem ${totalFilters} filtro(s) aplicados. Deseja realmente remover todos os filtros?`
+          }
+          confirmLabel={dialogMode === 'search' ? 'Pesquisar com Filtros' : 'Sim, Limpar Tudo'}
+          cancelLabel="Cancelar"
+          variant={dialogMode === 'search' ? 'warning' : 'danger'}
+          onConfirm={handleConfirmAction}
+          onCancel={handleCancelDialog}
+        />
       </div>
     </div>
   );

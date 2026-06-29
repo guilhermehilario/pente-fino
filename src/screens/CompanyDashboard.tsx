@@ -1,15 +1,34 @@
 import { useState } from 'react';
 import { 
   Building2, Calendar, DollarSign, FileText, Users, ArrowUpRight, 
-  ShieldCheck, Landmark, ArrowLeft, Share2
+  ShieldCheck, Landmark, ArrowLeft, Share2, ChevronRight
 } from 'lucide-react';
-import { mockCompanyData } from '../data/mockData';
+import { mockCompanies } from '../data/mockData';
 import { StatCard } from '../components/ui/StatCard';
 import { ContactInfoCard } from '../components/ui/ContactInfoCard';
 import { buttons, texts, containers, tables } from '../globalStyle';
 
-export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { onBack: () => void; onPoliticianClick?: (id: number) => void; onGraphClick?: () => void }) {
+interface CompanyDashboardProps {
+  companyId: number;
+  onBack: () => void;
+  onPoliticianClick?: (id: number) => void;
+  onGraphClick?: () => void;
+  onDetailClick?: () => void;
+}
+
+export function CompanyDashboard({ companyId, onBack, onPoliticianClick, onGraphClick, onDetailClick }: CompanyDashboardProps) {
   const [activeTab, setActiveTab] = useState<'politicians' | 'partners'>('politicians');
+  const company = mockCompanies[companyId];
+
+  if (!company) {
+    return (
+      <div className={containers.screenDashboard}>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-slate-400">Empresa não encontrada.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={containers.screenDashboard}>
@@ -29,12 +48,12 @@ export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { 
               <Building2 size={32} className="text-white" />
             </div>
             <div>
-              <h1 className={texts.h1Dashboard}>{mockCompanyData.name}</h1>
+              <h1 className={texts.h1Dashboard}>{company.name}</h1>
               <div className="flex items-center gap-2 mt-1 text-slate-400">
                 <span className={texts.badgeStatus}>
-                  <ShieldCheck size={14} /> {mockCompanyData.status}
+                  <ShieldCheck size={14} /> {company.status}
                 </span>
-                <span className={texts.badgeCategory}>Tecnologia da Informação</span>
+                <span className={texts.badgeCategory}>{company.sector}</span>
               </div>
             </div>
           </div>
@@ -45,7 +64,7 @@ export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { 
             >
               <Share2 size={16} /> Mapa de Conexões
             </button>
-            <button className={buttons.dashboardPrimaryBlue}>
+            <button onClick={onDetailClick} className={buttons.dashboardPrimaryBlue}>
               Ver Detalhes <ArrowUpRight size={16} />
             </button>
           </div>
@@ -55,26 +74,26 @@ export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { 
         <div className={containers.statGrid}>
           <StatCard 
             title="CNPJ" 
-            value={mockCompanyData.cnpj} 
+            value={company.cnpj} 
             icon={<FileText size={24} />} 
           />
           <StatCard 
             title="Valor de Mercado Estimado" 
-            value={mockCompanyData.marketValue} 
+            value={company.marketValue} 
             icon={<DollarSign size={24} />} 
             iconBgColor="bg-emerald-500/10" 
             iconTextColor="text-emerald-400" 
           />
           <StatCard 
             title="Data de Criação" 
-            value={mockCompanyData.creationDate} 
+            value={company.creationDate} 
             icon={<Calendar size={24} />} 
             iconBgColor="bg-purple-500/10" 
             iconTextColor="text-purple-400" 
           />
           <StatCard 
             title="Políticos Ligados" 
-            value={`${mockCompanyData.politicians.length} identificados`} 
+            value={`${company.politicians.length} identificados`} 
             icon={<Landmark size={24} />} 
             iconBgColor="bg-orange-500/10" 
             iconTextColor="text-orange-400" 
@@ -113,14 +132,15 @@ export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { 
                     <th className={texts.tableHeader}>{activeTab === 'politicians' ? 'Nome' : 'Nome do Sócio'}</th>
                     <th className={texts.tableHeader}>{activeTab === 'politicians' ? 'Cargo/Função' : 'Qualificação'}</th>
                     <th className={texts.tableHeaderRight}>{activeTab === 'politicians' ? 'Partido' : 'Participação'}</th>
+                    {activeTab === 'politicians' && <th className="w-8"></th>}
                   </tr>
                 </thead>
                 <tbody className={tables.tbody}>
                   {activeTab === 'politicians' ? (
-                    mockCompanyData.politicians.map((politician) => (
+                    company.politicians.map((politician) => (
                       <tr
                         key={`pol-${politician.id}`}
-                        className={`${tables.tr} ${onPoliticianClick ? 'cursor-pointer' : ''}`}
+                        className={`${tables.tr} ${onPoliticianClick ? 'cursor-pointer group' : ''}`}
                         onClick={() => onPoliticianClick?.(politician.id)}
                       >
                         <td className={tables.td}>
@@ -128,7 +148,7 @@ export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { 
                             <div className={tables.avatarWrapper}>
                               {politician.name.charAt(0)}
                             </div>
-                            <span className={texts.tableCellName}>{politician.name}</span>
+                            <span className={`${texts.tableCellName} group-hover:text-blue-300 transition-colors`}>{politician.name}</span>
                           </div>
                         </td>
                         <td className="p-4 text-slate-300">
@@ -139,10 +159,13 @@ export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { 
                         <td className={texts.tableCellRightOrange}>
                           {politician.party}
                         </td>
+                        <td className="p-4">
+                          <ChevronRight size={16} className="text-slate-500 opacity-0 group-hover:opacity-100 group-hover:text-blue-400 transition-all group-hover:translate-x-0.5" />
+                        </td>
                       </tr>
                     ))
                   ) : (
-                    mockCompanyData.partners.map((partner) => (
+                    company.partners.map((partner) => (
                       <tr key={`partner-${partner.id}`} className={tables.tr}>
                         <td className={tables.td}>
                           <div className="flex items-center gap-3">
@@ -169,9 +192,9 @@ export function CompanyDashboard({ onBack, onPoliticianClick, onGraphClick }: { 
           </div>
 
           <ContactInfoCard 
-            email={mockCompanyData.email}
-            phone={mockCompanyData.phone}
-            address={mockCompanyData.address}
+            email={company.email}
+            phone={company.phone}
+            address={company.address}
             addressLabel="Endereço Principal"
           />
         </div>

@@ -5,8 +5,8 @@ import { mockCompanies, mockPoliticians } from '../data/mockData';
 
 export type ViewState =
   | { type: 'search' }
-  | { type: 'company' }
-  | { type: 'person' }
+  | { type: 'company'; companyId: number }
+  | { type: 'person'; personId: number }
   | { type: 'company-detail'; companyId: number }
   | { type: 'politician-detail'; politicianId: number }
   | { type: 'graph'; centerType?: 'politician' | 'company'; centerId?: number };
@@ -28,10 +28,14 @@ function resolveTitle(view: ViewState): string {
   switch (view.type) {
     case 'search':
       return 'Busca';
-    case 'company':
-      return 'Dashboard da Empresa';
-    case 'person':
-      return 'Dashboard da Pessoa';
+    case 'company': {
+      const c = mockCompanies[view.companyId];
+      return c ? c.name : 'Dashboard da Empresa';
+    }
+    case 'person': {
+      const p = mockPoliticians[view.personId];
+      return p ? p.name : 'Dashboard da Pessoa';
+    }
     case 'company-detail': {
       const c = mockCompanies[view.companyId];
       return c ? c.name : 'Detalhes da Empresa';

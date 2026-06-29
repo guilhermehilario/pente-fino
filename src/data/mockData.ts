@@ -15,6 +15,7 @@ export interface PoliticianDetail {
   politicalCareer: { year: string; position: string; description: string }[];
   legalProcesses: { year: string; type: string; status: string; description: string }[];
   linkedCompanies: { id: number; name: string; cnpj: string; relation: string }[];
+  linkedPeople: { id: number; name: string; role: string; relation: string }[];
 }
 
 export interface CompanyDetail {
@@ -35,47 +36,6 @@ export interface CompanyDetail {
   politicians: { id: number; name: string; role: string; party: string; relation: string }[];
   suspiciousContracts: { year: string; value: string; agency: string; description: string }[];
 }
-
-export const mockCompanyData = {
-  name: "TechNova Soluções S.A.",
-  cnpj: "12.345.678/0001-99",
-  marketValue: "R$ 45.200.000,00",
-  creationDate: "15 de Março de 2018",
-  status: "Ativa",
-  email: "contato@technova.com.br",
-  phone: "(11) 4002-8922",
-  address: "Av. Paulista, 1000 - Bela Vista, São Paulo - SP",
-  politicians: [
-    { id: 1, name: "Roberto Alves", role: "Deputado Estadual", party: "PMB" },
-    { id: 2, name: "João Silveira", role: "Senador", party: "PSD" },
-    { id: 3, name: "Maria Costa", role: "Prefeita", party: "MDB" }
-  ],
-  partners: [
-    { id: 1, name: "Carlos Eduardo Mendes", role: "Sócio-Administrador", equity: "45%" },
-    { id: 2, name: "Ana Beatriz Silveira", role: "Sócia", equity: "30%" },
-    { id: 3, name: "Fernando Costa", role: "Sócio", equity: "25%" }
-  ]
-};
-
-export const mockPersonData = {
-  name: "Roberto Alves",
-  role: "Deputado Estadual",
-  salary: "R$ 31.238,19",
-  wealth: "R$ 4.250.000,00",
-  status: "Ativo",
-  email: "gab.robertoalves@alesp.sp.gov.br",
-  phone: "(11) 3886-0000",
-  address: "Palácio 9 de Julho - Av. Pedro Álvares Cabral, 201",
-  linkedCompanies: [
-    { id: 1, name: "TechNova Soluções S.A.", cnpj: "12.345.678/0001-99", relation: "Sócio Oculto / Suspeita" },
-    { id: 2, name: "Construtora Horizonte", cnpj: "98.765.432/0001-10", relation: "Ex-Sócio" },
-    { id: 3, name: "AgroPecuária Alves", cnpj: "45.123.789/0001-55", relation: "Sócio-Administrador" }
-  ],
-  linkedPeople: [
-    { id: 1, name: "Maria Costa", role: "Prefeita", relation: "Aliada Política" },
-    { id: 2, name: "Carlos Eduardo Mendes", role: "Empresário", relation: "Doador de Campanha" }
-  ]
-};
 
 export const mockPoliticians: Record<number, PoliticianDetail> = {
   1: {
@@ -111,6 +71,10 @@ export const mockPoliticians: Record<number, PoliticianDetail> = {
       { id: 1, name: 'TechNova Soluções S.A.', cnpj: '12.345.678/0001-99', relation: 'Sócio Oculto / Suspeita' },
       { id: 2, name: 'Construtora Horizonte', cnpj: '98.765.432/0001-10', relation: 'Ex-Sócio (2015-2020)' },
       { id: 3, name: 'AgroPecuária Alves', cnpj: '45.123.789/0001-55', relation: 'Sócio-Administrador' }
+    ],
+    linkedPeople: [
+      { id: 3, name: 'Maria Costa', role: 'Prefeita', relation: 'Aliada Política' },
+      { id: 2, name: 'Carlos Eduardo Mendes', role: 'Empresário', relation: 'Doador de Campanha' }
     ]
   },
   2: {
@@ -146,6 +110,10 @@ export const mockPoliticians: Record<number, PoliticianDetail> = {
       { id: 1, name: 'TechNova Soluções S.A.', cnpj: '12.345.678/0001-99', relation: 'Doador de Campanha' },
       { id: 4, name: 'Construtora Silveira Ltda.', cnpj: '11.222.333/0001-44', relation: 'Sócio majoritário' },
       { id: 5, name: 'AgroNorte S.A.', cnpj: '55.666.777/0001-88', relation: 'Sócio oculto' }
+    ],
+    linkedPeople: [
+      { id: 3, name: 'Maria Costa', role: 'Prefeita', relation: 'Aliada política' },
+      { id: 1, name: 'Roberto Alves', role: 'Deputado Estadual', relation: 'Aliado político' }
     ]
   },
   3: {
@@ -179,6 +147,10 @@ export const mockPoliticians: Record<number, PoliticianDetail> = {
     linkedCompanies: [
       { id: 1, name: 'TechNova Soluções S.A.', cnpj: '12.345.678/0001-99', relation: 'Doador de Campanha' },
       { id: 6, name: 'SaúdePrimeira ServiÃ§os Ltda.', cnpj: '77.888.999/0001-11', relation: 'Contrato emergencial suspeito' }
+    ],
+    linkedPeople: [
+      { id: 1, name: 'Roberto Alves', role: 'Deputado Estadual', relation: 'Aliado político' },
+      { id: 2, name: 'João Silveira', role: 'Senador', relation: 'Aliado político' }
     ]
   }
 };

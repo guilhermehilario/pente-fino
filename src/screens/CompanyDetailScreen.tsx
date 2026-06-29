@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   ArrowLeft, Building2, ShieldCheck, FileText, DollarSign, Calendar,
   AlertTriangle, Users, Landmark, ChevronDown, ChevronUp,
-  ExternalLink, Mail, Phone, MapPin, TrendingUp, Briefcase, FileWarning
+  ExternalLink, Mail, Phone, MapPin, TrendingUp, Briefcase, FileWarning,
+  ChevronRight
 } from 'lucide-react';
 import type { CompanyDetail } from '../data/mockData';
 import { buttons, texts, containers, tables, cards } from '../globalStyle';
@@ -195,6 +196,7 @@ export function CompanyDetailScreen({ company, onBack, onPoliticianClick }: Comp
                       <th className={texts.tableHeader}>{activeTab === 'partners' ? 'Nome do Sócio' : 'Nome'}</th>
                       <th className={texts.tableHeader}>{activeTab === 'partners' ? 'Qualificação' : 'Cargo / Partido'}</th>
                       <th className={texts.tableHeaderRight}>{activeTab === 'partners' ? 'Participação' : 'Relação'}</th>
+                      {activeTab === 'politicians' && <th className="w-8"></th>}
                     </tr>
                   </thead>
                   <tbody className={tables.tbody}>
@@ -219,7 +221,7 @@ export function CompanyDetailScreen({ company, onBack, onPoliticianClick }: Comp
                       company.politicians.map((politician) => (
                         <tr
                           key={`pol-${politician.id}`}
-                          className={`${tables.tr} cursor-pointer`}
+                          className={`${tables.tr} cursor-pointer group`}
                           onClick={() => onPoliticianClick(politician.id)}
                         >
                           <td className={tables.td}>
@@ -227,7 +229,7 @@ export function CompanyDetailScreen({ company, onBack, onPoliticianClick }: Comp
                               <div className={tables.avatarWrapper}>
                                 {politician.name.charAt(0)}
                               </div>
-                              <span className={`${texts.tableCellName} group-hover:text-blue-300`}>
+                              <span className={`${texts.tableCellName} group-hover:text-blue-300 transition-colors`}>
                                 {politician.name}
                               </span>
                             </div>
@@ -238,6 +240,9 @@ export function CompanyDetailScreen({ company, onBack, onPoliticianClick }: Comp
                             </span>
                           </td>
                           <td className={texts.tableCellRightOrange}>{politician.relation}</td>
+                          <td className="p-4">
+                            <ChevronRight size={16} className="text-slate-500 opacity-0 group-hover:opacity-100 group-hover:text-blue-400 transition-all group-hover:translate-x-0.5" />
+                          </td>
                         </tr>
                       ))
                     )}

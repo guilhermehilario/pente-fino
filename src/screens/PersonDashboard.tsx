@@ -1,15 +1,33 @@
 import { useState } from 'react';
 import {
   ArrowUpRight, ShieldCheck, MapPin, Landmark,
-  ArrowLeft, Briefcase, Wallet, Building, Users, Share2
+  ArrowLeft, Briefcase, Wallet, Building, Users, Share2, ChevronRight
 } from 'lucide-react';
-import { mockPersonData } from '../data/mockData';
+import { mockPoliticians } from '../data/mockData';
 import { StatCard } from '../components/ui/StatCard';
 import { ContactInfoCard } from '../components/ui/ContactInfoCard';
 import { buttons, texts, containers, tables } from '../globalStyle';
 
-export function PersonDashboard({ onBack, onCompanyClick, onGraphClick }: { onBack: () => void; onCompanyClick?: (id: number) => void; onGraphClick?: () => void }) {
+interface PersonDashboardProps {
+  personId: number;
+  onBack: () => void;
+  onCompanyClick?: (id: number) => void;
+  onGraphClick?: () => void;
+}
+
+export function PersonDashboard({ personId, onBack, onCompanyClick, onGraphClick }: PersonDashboardProps) {
   const [activeTab, setActiveTab] = useState<'companies' | 'people'>('companies');
+  const person = mockPoliticians[personId];
+
+  if (!person) {
+    return (
+      <div className={containers.screenDashboard}>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-slate-400">Pessoa não encontrada.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={containers.screenDashboard}>
@@ -29,12 +47,15 @@ export function PersonDashboard({ onBack, onCompanyClick, onGraphClick }: { onBa
               <Landmark size={32} className="text-white" />
             </div>
             <div>
-              <h1 className={texts.h1Dashboard}>{mockPersonData.name}</h1>
+              <h1 className={texts.h1Dashboard}>{person.name}</h1>
               <div className="flex items-center gap-2 mt-1 text-slate-400">
                 <span className={texts.badgeStatus}>
-                  <ShieldCheck size={14} /> {mockPersonData.status}
+                  <ShieldCheck size={14} /> {person.status}
                 </span>
-                <span className={texts.badgeCategory}>Agente Público</span>
+                <span className={texts.badgeCategory}>{person.role}</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  {person.party}
+                </span>
               </div>
             </div>
           </div>
@@ -55,26 +76,26 @@ export function PersonDashboard({ onBack, onCompanyClick, onGraphClick }: { onBa
         <div className={containers.statGrid}>
           <StatCard 
             title="Cargo Atual" 
-            value={mockPersonData.role} 
+            value={person.role} 
             icon={<Briefcase size={24} />} 
           />
           <StatCard 
             title="Salário Bruto" 
-            value={mockPersonData.salary} 
+            value={person.salary} 
             icon={<Wallet size={24} />} 
             iconBgColor="bg-emerald-500/10" 
             iconTextColor="text-emerald-400" 
           />
           <StatCard 
             title="Patrimônio Declarado" 
-            value={mockPersonData.wealth} 
+            value={person.wealth} 
             icon={<Wallet size={24} />} 
             iconBgColor="bg-purple-500/10" 
             iconTextColor="text-purple-400" 
           />
           <StatCard 
             title="Empresas Ligadas" 
-            value={`${mockPersonData.linkedCompanies.length} identificadas`} 
+            value={`${person.linkedCompanies.length} identificadas`} 
             icon={<Building size={24} />} 
             iconBgColor="bg-orange-500/10" 
             iconTextColor="text-orange-400" 
@@ -113,14 +134,15 @@ export function PersonDashboard({ onBack, onCompanyClick, onGraphClick }: { onBa
                     <th className={texts.tableHeader}>{activeTab === 'companies' ? 'Nome da Empresa' : 'Nome da Pessoa'}</th>
                     <th className={texts.tableHeader}>{activeTab === 'companies' ? 'CNPJ' : 'Cargo'}</th>
                     <th className={texts.tableHeaderRight}>Relação/Vínculo</th>
+                    {activeTab === 'companies' && <th className="w-8"></th>}
                   </tr>
                 </thead>
                 <tbody className={tables.tbody}>
                   {activeTab === 'companies' ? (
-                    mockPersonData.linkedCompanies.map((company) => (
+                    person.linkedCompanies.map((company) => (
                       <tr
                         key={`comp-${company.id}`}
-                        className={`${tables.tr} ${onCompanyClick ? 'cursor-pointer' : ''}`}
+                        className={`${tables.tr} ${onCompanyClick ? 'cursor-pointer group' : ''}`}
                         onClick={() => onCompanyClick?.(company.id)}
                       >
                         <td className={tables.td}>
@@ -128,7 +150,7 @@ export function PersonDashboard({ onBack, onCompanyClick, onGraphClick }: { onBa
                             <div className={tables.iconWrapper}>
                               <Building size={16} />
                             </div>
-                            <span className={texts.tableCellName}>{company.name}</span>
+                            <span className={`${texts.tableCellName} group-hover:text-indigo-300 transition-colors`}>{company.name}</span>
                           </div>
                         </td>
                         <td className="p-4 text-slate-300">
@@ -137,10 +159,13 @@ export function PersonDashboard({ onBack, onCompanyClick, onGraphClick }: { onBa
                         <td className={texts.tableCellRightOrange}>
                           {company.relation}
                         </td>
+                        <td className="p-4">
+                          <ChevronRight size={16} className="text-slate-500 opacity-0 group-hover:opacity-100 group-hover:text-indigo-400 transition-all group-hover:translate-x-0.5" />
+                        </td>
                       </tr>
                     ))
                   ) : (
-                    mockPersonData.linkedPeople.map((person) => (
+                    person.linkedPeople.map((person) => (
                       <tr key={`pers-${person.id}`} className={tables.tr}>
                         <td className={tables.td}>
                           <div className="flex items-center gap-3">
@@ -167,9 +192,9 @@ export function PersonDashboard({ onBack, onCompanyClick, onGraphClick }: { onBa
           </div>
 
           <ContactInfoCard 
-            email={mockPersonData.email}
-            phone={mockPersonData.phone}
-            address={mockPersonData.address}
+            email={person.email}
+            phone={person.phone}
+            address={person.address}
             emailLabel="E-mail Gabinete"
             addressLabel="Endereço (Gabinete)"
             headerIcon={<MapPin className="text-indigo-400" size={20} />}
