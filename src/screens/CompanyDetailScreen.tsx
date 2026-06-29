@@ -3,7 +3,7 @@ import {
   ArrowLeft, Building2, ShieldCheck, FileText, DollarSign, Calendar,
   AlertTriangle, Users, Landmark, ChevronDown, ChevronUp,
   ExternalLink, Mail, Phone, MapPin, TrendingUp, Briefcase, FileWarning,
-  ChevronRight
+  ChevronRight, Share2
 } from 'lucide-react';
 import type { CompanyDetail } from '../data/mockData';
 import { buttons, texts, containers, tables, cards } from '../globalStyle';
@@ -12,6 +12,7 @@ interface CompanyDetailScreenProps {
   company: CompanyDetail;
   onBack: () => void;
   onPoliticianClick: (politicianId: number) => void;
+  onGraphClick?: () => void;
 }
 
 const alertConfig = {
@@ -20,7 +21,7 @@ const alertConfig = {
   yellow: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-500' },
 };
 
-export function CompanyDetailScreen({ company, onBack, onPoliticianClick }: CompanyDetailScreenProps) {
+export function CompanyDetailScreen({ company, onBack, onPoliticianClick, onGraphClick }: CompanyDetailScreenProps) {
   const [activeTab, setActiveTab] = useState<'partners' | 'politicians'>('partners');
   const [showAllContracts, setShowAllContracts] = useState(false);
 
@@ -51,6 +52,11 @@ export function CompanyDetailScreen({ company, onBack, onPoliticianClick }: Comp
             </div>
           </div>
           <div className={containers.dashboardHeaderRight}>
+            {onGraphClick && (
+              <button onClick={onGraphClick} className={`${buttons.secondary} flex items-center gap-2`}>
+                <Share2 size={16} /> Mapa de Conexões
+              </button>
+            )}
             <button className={buttons.secondary}>
               Exportar Relatório
             </button>

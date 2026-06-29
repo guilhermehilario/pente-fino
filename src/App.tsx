@@ -125,6 +125,7 @@ function App() {
             politician={politician}
             onBack={() => back()}
             onCompanyClick={(companyId) => push({ type: 'company-detail', companyId })}
+            onGraphClick={() => push({ type: 'graph', centerType: 'politician', centerId: current.politicianId })}
           />
         );
       }
@@ -140,6 +141,7 @@ function App() {
             company={company}
             onBack={() => back()}
             onPoliticianClick={(politicianId) => push({ type: 'politician-detail', politicianId })}
+            onGraphClick={() => push({ type: 'graph', centerType: 'company', centerId: current.companyId })}
           />
         );
       }

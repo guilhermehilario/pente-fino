@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   ArrowLeft, Landmark, ShieldCheck, Briefcase, Wallet, Calendar,
   Gavel, Building2, ChevronDown, ChevronUp,
-  ExternalLink, Mail, Phone, MapPin, Award, UserCheck, FileWarning
+  ExternalLink, Mail, Phone, MapPin, Award, UserCheck, FileWarning, Share2
 } from 'lucide-react';
 import type { PoliticianDetail } from '../data/mockData';
 import { buttons, texts, containers, tables, cards } from '../globalStyle';
@@ -11,6 +11,7 @@ interface PoliticianDetailScreenProps {
   politician: PoliticianDetail;
   onBack: () => void;
   onCompanyClick: (companyId: number) => void;
+  onGraphClick?: () => void;
 }
 
 const alertConfig = {
@@ -19,7 +20,7 @@ const alertConfig = {
   yellow: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-500' },
 };
 
-export function PoliticianDetailScreen({ politician, onBack, onCompanyClick }: PoliticianDetailScreenProps) {
+export function PoliticianDetailScreen({ politician, onBack, onCompanyClick, onGraphClick }: PoliticianDetailScreenProps) {
   const [showFullCareer, setShowFullCareer] = useState(false);
   const [showFullProcesses, setShowFullProcesses] = useState(false);
 
@@ -54,6 +55,11 @@ export function PoliticianDetailScreen({ politician, onBack, onCompanyClick }: P
             </div>
           </div>
           <div className={containers.dashboardHeaderRight}>
+            {onGraphClick && (
+              <button onClick={onGraphClick} className={`${buttons.secondary} flex items-center gap-2`}>
+                <Share2 size={16} /> Mapa de Conexões
+              </button>
+            )}
             <button className={buttons.secondary}>
               Exportar Dossiê
             </button>
