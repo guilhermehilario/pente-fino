@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  ArrowUpRight, ShieldCheck, Mail, Phone, MapPin, Landmark,
+  ArrowUpRight, ShieldCheck, MapPin, Landmark,
   ArrowLeft, Briefcase, Wallet, Building, Users
 } from 'lucide-react';
 import { mockPersonData } from '../data/mockData';
+import { StatCard } from '../components/ui/StatCard';
+import { ContactInfoCard } from '../components/ui/ContactInfoCard';
 
 export function PersonDashboard({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<'companies' | 'people'>('companies');
@@ -47,45 +49,32 @@ export function PersonDashboard({ onBack }: { onBack: () => void }) {
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 hover:bg-slate-800/60 transition-colors group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-blue-500/10 rounded-lg text-blue-400 group-hover:scale-110 transition-transform">
-                <Briefcase size={24} />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">Cargo Atual</p>
-            <p className="text-xl font-semibold text-slate-100">{mockPersonData.role}</p>
-          </div>
-
-          <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 hover:bg-slate-800/60 transition-colors group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400 group-hover:scale-110 transition-transform">
-                <Wallet size={24} /> {/* Note: DollarSign was replaced with Wallet for more variety if wanted, but Wallet is imported here. */}
-              </div>
-            </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">Salário Bruto</p>
-            <p className="text-xl font-semibold text-slate-100">{mockPersonData.salary}</p>
-          </div>
-
-          <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 hover:bg-slate-800/60 transition-colors group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-purple-500/10 rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
-                <Wallet size={24} />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">Patrimônio Declarado</p>
-            <p className="text-xl font-semibold text-slate-100">{mockPersonData.wealth}</p>
-          </div>
-
-          <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 hover:bg-slate-800/60 transition-colors group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-orange-500/10 rounded-lg text-orange-400 group-hover:scale-110 transition-transform">
-                <Building size={24} />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">Empresas Ligadas</p>
-            <p className="text-xl font-semibold text-slate-100">{mockPersonData.linkedCompanies.length} identificadas</p>
-          </div>
+          <StatCard 
+            title="Cargo Atual" 
+            value={mockPersonData.role} 
+            icon={<Briefcase size={24} />} 
+          />
+          <StatCard 
+            title="Salário Bruto" 
+            value={mockPersonData.salary} 
+            icon={<Wallet size={24} />} 
+            iconBgColor="bg-emerald-500/10" 
+            iconTextColor="text-emerald-400" 
+          />
+          <StatCard 
+            title="Patrimônio Declarado" 
+            value={mockPersonData.wealth} 
+            icon={<Wallet size={24} />} 
+            iconBgColor="bg-purple-500/10" 
+            iconTextColor="text-purple-400" 
+          />
+          <StatCard 
+            title="Empresas Ligadas" 
+            value={`${mockPersonData.linkedCompanies.length} identificadas`} 
+            icon={<Building size={24} />} 
+            iconBgColor="bg-orange-500/10" 
+            iconTextColor="text-orange-400" 
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -175,42 +164,14 @@ export function PersonDashboard({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 shadow-lg h-fit">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <MapPin className="text-indigo-400" size={20} /> Contato e Localização
-            </h2>
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
-                  <Mail size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-0.5">E-mail Gabinete</p>
-                  <p className="text-slate-200 font-medium">{mockPersonData.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
-                  <Phone size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-0.5">Telefone</p>
-                  <p className="text-slate-200 font-medium">{mockPersonData.phone}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
-                  <MapPin size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-0.5">Endereço (Gabinete)</p>
-                  <p className="text-slate-200 font-medium leading-relaxed">{mockPersonData.address}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ContactInfoCard 
+            email={mockPersonData.email}
+            phone={mockPersonData.phone}
+            address={mockPersonData.address}
+            emailLabel="E-mail Gabinete"
+            addressLabel="Endereço (Gabinete)"
+            headerIcon={<MapPin className="text-indigo-400" size={20} />}
+          />
         </div>
 
       </div>

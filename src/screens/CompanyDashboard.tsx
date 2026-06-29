@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Building2, Calendar, DollarSign, FileText, Users, ArrowUpRight, 
-  ShieldCheck, Mail, Phone, MapPin, Landmark, ArrowLeft 
+  ShieldCheck, Landmark, ArrowLeft 
 } from 'lucide-react';
 import { mockCompanyData } from '../data/mockData';
+import { StatCard } from '../components/ui/StatCard';
+import { ContactInfoCard } from '../components/ui/ContactInfoCard';
 
 export function CompanyDashboard({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<'politicians' | 'partners'>('politicians');
@@ -47,45 +49,32 @@ export function CompanyDashboard({ onBack }: { onBack: () => void }) {
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 hover:bg-slate-800/60 transition-colors group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-blue-500/10 rounded-lg text-blue-400 group-hover:scale-110 transition-transform">
-                <FileText size={24} />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">CNPJ</p>
-            <p className="text-xl font-semibold text-slate-100">{mockCompanyData.cnpj}</p>
-          </div>
-
-          <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 hover:bg-slate-800/60 transition-colors group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400 group-hover:scale-110 transition-transform">
-                <DollarSign size={24} />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">Valor de Mercado Estimado</p>
-            <p className="text-xl font-semibold text-slate-100">{mockCompanyData.marketValue}</p>
-          </div>
-
-          <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 hover:bg-slate-800/60 transition-colors group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-purple-500/10 rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
-                <Calendar size={24} />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">Data de Criação</p>
-            <p className="text-xl font-semibold text-slate-100">{mockCompanyData.creationDate}</p>
-          </div>
-
-          <div className="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 hover:bg-slate-800/60 transition-colors group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-orange-500/10 rounded-lg text-orange-400 group-hover:scale-110 transition-transform">
-                <Landmark size={24} />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">Políticos Ligados</p>
-            <p className="text-xl font-semibold text-slate-100">{mockCompanyData.politicians.length} identificados</p>
-          </div>
+          <StatCard 
+            title="CNPJ" 
+            value={mockCompanyData.cnpj} 
+            icon={<FileText size={24} />} 
+          />
+          <StatCard 
+            title="Valor de Mercado Estimado" 
+            value={mockCompanyData.marketValue} 
+            icon={<DollarSign size={24} />} 
+            iconBgColor="bg-emerald-500/10" 
+            iconTextColor="text-emerald-400" 
+          />
+          <StatCard 
+            title="Data de Criação" 
+            value={mockCompanyData.creationDate} 
+            icon={<Calendar size={24} />} 
+            iconBgColor="bg-purple-500/10" 
+            iconTextColor="text-purple-400" 
+          />
+          <StatCard 
+            title="Políticos Ligados" 
+            value={`${mockCompanyData.politicians.length} identificados`} 
+            icon={<Landmark size={24} />} 
+            iconBgColor="bg-orange-500/10" 
+            iconTextColor="text-orange-400" 
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -179,42 +168,12 @@ export function CompanyDashboard({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 shadow-lg h-fit">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <MapPin className="text-blue-400" size={20} /> Contato e Localização
-            </h2>
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
-                  <Mail size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-0.5">E-mail</p>
-                  <p className="text-slate-200 font-medium">{mockCompanyData.email}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
-                  <Phone size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-0.5">Telefone</p>
-                  <p className="text-slate-200 font-medium">{mockCompanyData.phone}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-slate-700/50 rounded-lg text-slate-400">
-                  <MapPin size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400 mb-0.5">Endereço Principal</p>
-                  <p className="text-slate-200 font-medium leading-relaxed">{mockCompanyData.address}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ContactInfoCard 
+            email={mockCompanyData.email}
+            phone={mockCompanyData.phone}
+            address={mockCompanyData.address}
+            addressLabel="Endereço Principal"
+          />
         </div>
 
       </div>

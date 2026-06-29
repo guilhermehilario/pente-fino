@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp } from 'lucide-react';
 
 const FILTER_CATEGORIES = [
   {
@@ -159,8 +159,9 @@ export function SearchScreen({ onSearch }: { onSearch: (query: string) => void }
                       {category.options.map((option) => {
                         const isSelected = selectedFilters[category.id]?.includes(option);
                         return (
-                          <label 
+                          <div 
                             key={option} 
+                            onClick={() => toggleFilter(category.id, option)}
                             className="flex items-start gap-3 p-2 rounded-md hover:bg-slate-700/50 cursor-pointer transition-colors group"
                           >
                             <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -173,7 +174,7 @@ export function SearchScreen({ onSearch }: { onSearch: (query: string) => void }
                             <span className="text-sm text-slate-300 group-hover:text-slate-100 leading-tight">
                               {option}
                             </span>
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
