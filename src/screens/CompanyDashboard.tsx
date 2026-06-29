@@ -8,7 +8,7 @@ import { StatCard } from '../components/ui/StatCard';
 import { ContactInfoCard } from '../components/ui/ContactInfoCard';
 import { buttons, texts, containers, tables } from '../globalStyle';
 
-export function CompanyDashboard({ onBack }: { onBack: () => void }) {
+export function CompanyDashboard({ onBack, onPoliticianClick }: { onBack: () => void; onPoliticianClick?: (id: number) => void }) {
   const [activeTab, setActiveTab] = useState<'politicians' | 'partners'>('politicians');
 
   return (
@@ -115,7 +115,11 @@ export function CompanyDashboard({ onBack }: { onBack: () => void }) {
                 <tbody className={tables.tbody}>
                   {activeTab === 'politicians' ? (
                     mockCompanyData.politicians.map((politician) => (
-                      <tr key={`pol-${politician.id}`} className={tables.tr}>
+                      <tr
+                        key={`pol-${politician.id}`}
+                        className={`${tables.tr} ${onPoliticianClick ? 'cursor-pointer' : ''}`}
+                        onClick={() => onPoliticianClick?.(politician.id)}
+                      >
                         <td className={tables.td}>
                           <div className="flex items-center gap-3">
                             <div className={tables.avatarWrapper}>

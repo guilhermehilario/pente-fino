@@ -8,7 +8,7 @@ import { StatCard } from '../components/ui/StatCard';
 import { ContactInfoCard } from '../components/ui/ContactInfoCard';
 import { buttons, texts, containers, tables } from '../globalStyle';
 
-export function PersonDashboard({ onBack }: { onBack: () => void }) {
+export function PersonDashboard({ onBack, onCompanyClick }: { onBack: () => void; onCompanyClick?: (id: number) => void }) {
   const [activeTab, setActiveTab] = useState<'companies' | 'people'>('companies');
 
   return (
@@ -115,7 +115,11 @@ export function PersonDashboard({ onBack }: { onBack: () => void }) {
                 <tbody className={tables.tbody}>
                   {activeTab === 'companies' ? (
                     mockPersonData.linkedCompanies.map((company) => (
-                      <tr key={`comp-${company.id}`} className={tables.tr}>
+                      <tr
+                        key={`comp-${company.id}`}
+                        className={`${tables.tr} ${onCompanyClick ? 'cursor-pointer' : ''}`}
+                        onClick={() => onCompanyClick?.(company.id)}
+                      >
                         <td className={tables.td}>
                           <div className="flex items-center gap-3">
                             <div className={tables.iconWrapper}>
