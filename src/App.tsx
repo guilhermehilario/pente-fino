@@ -221,6 +221,7 @@ function App() {
         onBack={back}
         onForward={forward}
         onGoTo={goTo}
+        onSearchClick={() => push({ type: 'search' })}
       />
       <ViewTransition
         viewKey={computeViewKey(current)}

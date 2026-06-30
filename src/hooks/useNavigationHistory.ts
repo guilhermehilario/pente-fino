@@ -23,7 +23,7 @@ export interface NavEntry {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 // Incrementada sempre que o schema do ViewState muda (ex: adicionar companyId/personId)
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
 const STORAGE_KEY = `pega-corrupcao-nav-history-v${STORAGE_VERSION}`;
 const MAX_ENTRIES = 50;
 
@@ -177,6 +177,10 @@ export function useNavigationHistory(initialView: ViewState) {
               const diff = restored.length - currentLen;
               forwardStackRef.current = forwardStackRef.current.slice(diff);
               setLastDirection('forward');
+            } else {
+              // Same length — can happen after replaceState or goTo.
+              // Default to 'backward' since this is typically a browser back action.
+              setLastDirection('backward');
             }
 
             setHistory(restored);
@@ -186,8 +190,20 @@ export function useNavigationHistory(initialView: ViewState) {
         } catch {}
       }
 
-      // No valid state — user navigated outside our app history
-      // Keep current history as-is
+      // No valid state — user navigated to a non-app browser history entry.
+      // Reset to the initial screen to keep app and browser in sync.
+      const fallbackEntry: NavEntry = {
+        view: initialRef.current,
+        title: resolveTitle(initialRef.current),
+        timestamp: Date.now(),
+      };
+      setHistory([fallbackEntry]);
+      setLastDirection('backward');
+      setCanGoForward(false);
+      forwardStackRef.current = [];
+      try {
+        window.history.replaceState({ entries: JSON.stringify([fallbackEntry]) }, '');
+      } catch {}
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -201,17 +217,13 @@ export function useNavigationHistory(initialView: ViewState) {
   const push = useCallback((view: ViewState) => {
     const entry: NavEntry = { view, title: resolveTitle(view), timestamp: Date.now() };
 
-    // Use function updater to preserve correct batching semantics
-    let trimmed: NavEntry[] = [];
-    setHistory((prev) => {
-      const updated = [...prev, entry];
-      trimmed = updated.length > MAX_ENTRIES ? updated.slice(-MAX_ENTRIES) : updated;
-      return trimmed;
-    });
+    // Read latest history from ref (always up-to-date after each render)
+    const newHistory = [...historyRef.current, entry];
+    const trimmed = newHistory.length > MAX_ENTRIES ? newHistory.slice(-MAX_ENTRIES) : newHistory;
 
+    setHistory(trimmed);
     setLastDirection('forward');
 
-    // Side effects outside setHistory — avoids double-execution in Strict Mode
     try {
       window.history.pushState({ entries: JSON.stringify(trimmed) }, '');
     } catch {}
@@ -271,11 +283,11 @@ export function useNavigationHistory(initialView: ViewState) {
   const replace = useCallback((view: ViewState) => {
     const entry: NavEntry = { view, title: resolveTitle(view), timestamp: Date.now() };
 
-    let updated: NavEntry[] = [];
-    setHistory((prev) => {
-      updated = prev.length === 0 ? [entry] : [...prev.slice(0, -1), entry];
-      return updated;
-    });
+    // Read latest history from ref (always up-to-date after each render)
+    const currentHistory = historyRef.current;
+    const updated = currentHistory.length === 0 ? [entry] : [...currentHistory.slice(0, -1), entry];
+
+    setHistory(updated);
 
     try {
       window.history.replaceState({ entries: JSON.stringify(updated) }, '');

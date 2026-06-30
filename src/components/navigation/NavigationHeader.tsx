@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, History } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, History, Search } from 'lucide-react';
 import type { ViewState, NavEntry } from '../../hooks/useNavigationHistory';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -12,6 +12,7 @@ interface NavigationHeaderProps {
   onBack: () => void;
   onForward: () => void;
   onGoTo: (index: number) => void;
+  onSearchClick?: () => void;
 }
 
 // ─── Icon mapping per view type ────────────────────────────────────────────
@@ -36,6 +37,7 @@ export function NavigationHeader({
   onBack,
   onForward,
   onGoTo,
+  onSearchClick,
 }: NavigationHeaderProps) {
   const [showHistory, setShowHistory] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -113,6 +115,23 @@ export function NavigationHeader({
         >
           <ChevronRight size={20} />
         </button>
+
+        {/* ── Search home ── */}
+        {onSearchClick && (
+          <button
+            onClick={onSearchClick}
+            className={`p-2 rounded-lg transition-all ${
+              current.type !== 'search'
+                ? 'text-slate-300 hover:bg-blue-600/20 hover:text-blue-400 active:bg-blue-600/30 cursor-pointer'
+                : 'text-slate-700 cursor-not-allowed'
+            }`}
+            title={current.type !== 'search' ? 'Ir para a Busca' : 'Você já está na Busca'}
+            aria-label="Ir para a Busca"
+            disabled={current.type === 'search'}
+          >
+            <Search size={20} />
+          </button>
+        )}
 
         {/* ── Separator ── */}
         <div className="w-px h-6 bg-slate-700/60 mx-2 flex-shrink-0" />
