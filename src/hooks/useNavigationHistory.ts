@@ -235,17 +235,30 @@ export function useNavigationHistory(initialView: ViewState) {
 
   /**
    * Jump to a specific index in the history stack.
-   * Navigates the browser's own history stack so forward/back remain correct.
+   * Directly updates the app state and syncs the browser via replaceState,
+   * avoiding the fragility of window.history.go() + popstate synchronization.
    */
   const goTo = useCallback((index: number) => {
-    const prevLen = historyRef.current.length;
+    const entries = historyRef.current;
+    const prevLen = entries.length;
     if (index < 0 || index >= prevLen) return;
+    if (index === prevLen - 1) return;
 
-    const delta = index - (prevLen - 1);
-    if (delta === 0) return;
+    // Determine direction for transition animations
+    setLastDirection(index < prevLen - 1 ? 'backward' : 'forward');
 
-    // Navigate browser history — popstate handler will update the stack
-    window.history.go(delta);
+    // Slice history to the target index (inclusive) and update directly
+    const targetEntries = entries.slice(0, index + 1);
+    setHistory(targetEntries);
+
+    // Sync browser state so back/forward remain usable
+    try {
+      window.history.replaceState({ entries: JSON.stringify(targetEntries) }, '');
+    } catch {}
+
+    // Clear forward stack since we're jumping within the current history
+    forwardStackRef.current = [];
+    setCanGoForward(false);
   }, []);
 
   /**
