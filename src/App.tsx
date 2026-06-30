@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
 import { useNavigationHistory, type ViewState } from './hooks/useNavigationHistory';
 import { useSearchHistory } from './hooks/useSearchHistory';
 import { NavigationHeader } from './components/navigation/NavigationHeader';
+import { ViewTransition } from './components/ui/ViewTransition';
 import { SearchScreen } from './screens/SearchScreen';
 import { CompanyDashboard } from './screens/CompanyDashboard';
 import { PersonDashboard } from './screens/PersonDashboard';
@@ -74,11 +76,30 @@ function searchEntity(query: string): { type: 'company'; companyId: number } | {
   return { type: 'company', companyId: 1 };
 }
 
+/** Gera uma chave única para cada tipo de view (usada pelo ViewTransition). */
+function computeViewKey(current: ViewState): string {
+  switch (current.type) {
+    case 'company':
+    case 'company-detail':
+      return `${current.type}-${current.companyId}`;
+    case 'person':
+    case 'politician-detail':
+      return `${current.type}-${current.politicianId}`;
+    case 'graph':
+      return current.centerType && current.centerId
+        ? `${current.type}-${current.centerType}-${current.centerId}`
+        : current.type;
+    default:
+      return current.type;
+  }
+}
+
 function App() {
   const {
     current,
     canGoBack,
     canGoForward,
+    lastDirection,
     navEntries,
     push,
     back,
@@ -88,10 +109,10 @@ function App() {
   } = useNavigationHistory({ type: 'search' });
   const { searchHistory, addSearch, removeSearch, clearHistory } = useSearchHistory();
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     addSearch(query);
     push(searchEntity(query));
-  };
+  }, [addSearch, push]);
 
   const renderView = () => {
     switch (current.type) {
@@ -199,7 +220,12 @@ function App() {
         onForward={forward}
         onGoTo={goTo}
       />
-      {renderView()}
+      <ViewTransition
+        viewKey={computeViewKey(current)}
+        direction={lastDirection}
+      >
+        {renderView()}
+      </ViewTransition>
     </>
   );
 }

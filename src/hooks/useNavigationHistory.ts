@@ -129,6 +129,8 @@ export function useNavigationHistory(initialView: ViewState) {
     return stored;
   });
   const [canGoForward, setCanGoForward] = useState(false);
+  // Track last navigation direction for transition animations
+  const [lastDirection, setLastDirection] = useState<'forward' | 'backward'>('forward');
 
   // Track forward entries for canGoForward indicator
   const forwardStackRef = useRef<NavEntry[]>([]);
@@ -169,10 +171,12 @@ export function useNavigationHistory(initialView: ViewState) {
             if (restored.length < currentLen) {
               // User went back → store the skipped entries in forward stack
               forwardStackRef.current = historyRef.current.slice(restored.length);
+              setLastDirection('backward');
             } else if (restored.length > currentLen) {
               // User went forward → remove entries from forward stack
               const diff = restored.length - currentLen;
               forwardStackRef.current = forwardStackRef.current.slice(diff);
+              setLastDirection('forward');
             }
 
             setHistory(restored);
@@ -205,6 +209,8 @@ export function useNavigationHistory(initialView: ViewState) {
       return trimmed;
     });
 
+    setLastDirection('forward');
+
     // Side effects outside setHistory — avoids double-execution in Strict Mode
     try {
       window.history.pushState({ entries: JSON.stringify(trimmed) }, '');
@@ -217,11 +223,13 @@ export function useNavigationHistory(initialView: ViewState) {
   /** Go back one step using browser history API. Does nothing if already at the root. */
   const back = useCallback(() => {
     if (historyRef.current.length <= 1) return;
+    setLastDirection('backward');
     window.history.back(); // Triggers popstate → updates history
   }, []);
 
   /** Go forward one step using browser history API. */
   const forward = useCallback(() => {
+    setLastDirection('forward');
     window.history.forward(); // Triggers popstate → updates history
   }, []);
 
@@ -260,5 +268,5 @@ export function useNavigationHistory(initialView: ViewState) {
 
   const navEntries = history;
 
-  return { current, canGoBack, canGoForward, navEntries, push, back, forward, goTo, reset } as const;
+  return { current, canGoBack, canGoForward, lastDirection, navEntries, push, back, forward, goTo, reset } as const;
 }

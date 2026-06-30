@@ -31,10 +31,6 @@ export function CompanyDetailScreen({ company, onBack, onPoliticianClick, onGrap
     <div className={containers.screenDashboard}>
       <div className={containers.dashboardWrapper}>
 
-        <button onClick={onBack} className={buttons.back}>
-          <ArrowLeft size={16} /> Voltar para Resultados
-        </button>
-
         {/* Header */}
         <header className={containers.dashboardHeader}>
           <div className={containers.dashboardHeaderLeft}>
