@@ -6,6 +6,7 @@ import { PersonDashboard } from './screens/PersonDashboard';
 import { PoliticianDetailScreen } from './screens/PoliticianDetailScreen';
 import { CompanyDetailScreen } from './screens/CompanyDetailScreen';
 import { NetworkGraphScreen } from './screens/NetworkGraphScreen';
+import { DashboardCruzamento } from './screens/DashboardCruzamento';
 import { mockPoliticians, mockCompanies } from './data/mockData';
 
 /** Busca o melhor resultado correspondente nos dados mockados. */
@@ -90,6 +91,7 @@ function App() {
             searchHistory={searchHistory}
             onRemoveSearch={removeSearch}
             onClearHistory={clearHistory}
+            onCrossReferenceClick={() => push({ type: 'cross-reference' })}
           />
         );
 
@@ -157,6 +159,16 @@ function App() {
             onBack={() => back()}
             onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
             onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}
+          />
+        );
+
+      case 'cross-reference':
+        return (
+          <DashboardCruzamento
+            onBack={() => back()}
+            onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
+            onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}
+            onGraphClick={() => push({ type: 'graph' })}
           />
         );
 

@@ -9,7 +9,8 @@ export type ViewState =
   | { type: 'person'; personId: number }
   | { type: 'company-detail'; companyId: number }
   | { type: 'politician-detail'; politicianId: number }
-  | { type: 'graph'; centerType?: 'politician' | 'company'; centerId?: number };
+  | { type: 'graph'; centerType?: 'politician' | 'company'; centerId?: number }
+  | { type: 'cross-reference' };
 
 // ─── History entry ──────────────────────────────────────────────────────────
 
@@ -48,6 +49,8 @@ function resolveTitle(view: ViewState): string {
     }
     case 'graph':
       return 'Mapa de Conexões';
+    case 'cross-reference':
+      return 'Dashboard de Cruzamento';
   }
 }
 
@@ -78,9 +81,10 @@ function isValidEntry(raw: unknown): raw is NavEntry {
     case 'politician-detail':
       return typeof view.politicianId === 'number';
     case 'graph':
-      // centerType e centerId são opcionais
       if (view.centerType !== undefined && view.centerType !== 'politician' && view.centerType !== 'company') return false;
       if (view.centerId !== undefined && typeof view.centerId !== 'number') return false;
+      return true;
+    case 'cross-reference':
       return true;
     default:
       return false; // tipo desconhecido

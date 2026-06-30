@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp, X, Clock } from 'lucide-react';
+import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp, X, Clock, Gavel } from 'lucide-react';
 import { buttons, inputs, texts, containers, cards } from '../globalStyle';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
@@ -36,9 +36,10 @@ interface SearchScreenProps {
   searchHistory: string[];
   onRemoveSearch: (query: string) => void;
   onClearHistory: () => void;
+  onCrossReferenceClick?: () => void;
 }
 
-export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearHistory }: SearchScreenProps) {
+export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearHistory, onCrossReferenceClick }: SearchScreenProps) {
   const [query, setQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -170,13 +171,25 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
                 <Upload size={20} />
               </button>
               
-              <button 
-                type="submit"
-                className={buttons.primary}
-              >
-                <span className="hidden sm:inline">Pesquisar</span>
-                <ScanLine className="sm:hidden" size={20} />
-              </button>
+        <div className="flex items-center gap-1">
+          {onCrossReferenceClick && (
+            <button
+              type="button"
+              onClick={onCrossReferenceClick}
+              className="p-2.5 rounded-full text-slate-400 hover:bg-slate-700 hover:text-red-400 transition-all flex items-center gap-2"
+              title="Dashboard de Cruzamento"
+            >
+              <Gavel size={20} />
+            </button>
+          )}
+          <button 
+            type="submit"
+            className={buttons.primary}
+          >
+            <span className="hidden sm:inline">Pesquisar</span>
+            <ScanLine className="sm:hidden" size={20} />
+          </button>
+        </div>
             </div>
           </div>
         </form>
