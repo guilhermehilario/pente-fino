@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  ArrowUpRight, ShieldCheck, MapPin, Landmark,
-  ArrowLeft, Briefcase, Wallet, Building, Users, Share2, ChevronRight
+  ShieldCheck, MapPin, Landmark,
+  Briefcase, Wallet, Building, Users, Share2, ChevronRight, ExternalLink
 } from 'lucide-react';
 import { mockPoliticians } from '../data/mockData';
 import { StatCard } from '../components/ui/StatCard';
@@ -11,11 +11,12 @@ import { buttons, texts, containers, tables } from '../globalStyle';
 interface PersonDashboardProps {
   personId: number;
   onBack: () => void;
+  onDetailClick?: () => void;
   onCompanyClick?: (id: number) => void;
   onGraphClick?: () => void;
 }
 
-export function PersonDashboard({ personId, onBack, onCompanyClick, onGraphClick }: PersonDashboardProps) {
+export function PersonDashboard({ personId, onBack, onDetailClick, onCompanyClick, onGraphClick }: PersonDashboardProps) {
   const [activeTab, setActiveTab] = useState<'companies' | 'people'>('companies');
   const person = mockPoliticians[personId];
 
@@ -61,8 +62,8 @@ export function PersonDashboard({ personId, onBack, onCompanyClick, onGraphClick
             >
               <Share2 size={16} /> Mapa de Conexões
             </button>
-            <button className={buttons.dashboardPrimaryIndigo}>
-              Ver Transações <ArrowUpRight size={16} />
+            <button onClick={onDetailClick} className={buttons.dashboardPrimaryIndigo}>
+              Ver Detalhes <ExternalLink size={16} />
             </button>
           </div>
         </header>

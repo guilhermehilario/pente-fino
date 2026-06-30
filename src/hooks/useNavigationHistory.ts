@@ -248,6 +248,30 @@ export function useNavigationHistory(initialView: ViewState) {
     window.history.go(delta);
   }, []);
 
+  /**
+   * Replace the last entry in the stack with a new view.
+   * Unlike `push()`, this does not add a new history entry — it replaces the
+   * current one. Useful when navigating from a summary view to its detail
+   * (e.g., CompanyDashboard → CompanyDetailScreen) where both represent the
+   * same entity at different detail levels.
+   */
+  const replace = useCallback((view: ViewState) => {
+    const entry: NavEntry = { view, title: resolveTitle(view), timestamp: Date.now() };
+
+    let updated: NavEntry[] = [];
+    setHistory((prev) => {
+      updated = prev.length === 0 ? [entry] : [...prev.slice(0, -1), entry];
+      return updated;
+    });
+
+    try {
+      window.history.replaceState({ entries: JSON.stringify(updated) }, '');
+    } catch {}
+
+    forwardStackRef.current = [];
+    setCanGoForward(false);
+  }, []);
+
   /** Clear history and reset to the initial view. Cannot go forward after reset. */
   const reset = useCallback(() => {
     const entry: NavEntry = {
@@ -268,5 +292,5 @@ export function useNavigationHistory(initialView: ViewState) {
 
   const navEntries = history;
 
-  return { current, canGoBack, canGoForward, lastDirection, navEntries, push, back, forward, goTo, reset } as const;
+  return { current, canGoBack, canGoForward, lastDirection, navEntries, push, back, forward, replace, goTo, reset } as const;
 }
