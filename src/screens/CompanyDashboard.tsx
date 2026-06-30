@@ -34,12 +34,7 @@ export function CompanyDashboard({ companyId, onBack, onPoliticianClick, onGraph
     <div className={containers.screenDashboard}>
       <div className={containers.dashboardWrapper}>
         
-        <button 
-          onClick={onBack}
-          className={buttons.back}
-        >
-          <ArrowLeft size={16} /> Voltar para a Busca
-        </button>
+        
 
         {/* Header Section */}
         <header className={containers.dashboardHeader}>

@@ -36,13 +36,13 @@ pega-corrupcao/
 ├── CONTEXT_PROJECT.md               ← Este documento
 └── src/
     ├── main.tsx
-    ├── App.tsx                      # Roteador com stack de navegação
+    ├── App.tsx                      # Roteador com stack de navegação + NavigationHeader
     ├── index.css                    # Tema Tailwind + animação scanner
     ├── hooks/
-    │   └── useNavigationHistory.ts  # Hook de navegação em stack + localStorage
+    │   └── useNavigationHistory.ts  # Hook de navegação em stack + localStorage + browser History API
     ├── data/
     │   ├── mockData.ts              # Dados mockados + tipos expandidos
-    │   └── graphData.ts             # Transformação de dados para grafo (NOVO)
+    │   └── graphData.ts             # Transformação de dados para grafo
     ├── globalStyle/
     │   ├── index.ts
     │   ├── buttonStyle.ts
@@ -52,6 +52,8 @@ pega-corrupcao/
     │   ├── cardStyle.ts
     │   └── tableStyle.ts
     ├── components/
+    │   ├── navigation/
+    │   │   └── NavigationHeader.tsx  # Barra de navegação global (back/forward + histórico visual)
     │   └── ui/
     │       ├── StatCard.tsx
     │       └── ContactInfoCard.tsx
@@ -61,7 +63,8 @@ pega-corrupcao/
         ├── PersonDashboard.tsx
         ├── PoliticianDetailScreen.tsx
         ├── CompanyDetailScreen.tsx
-        └── NetworkGraphScreen.tsx   # Mapa de Conexões (NOVO)
+        ├── NetworkGraphScreen.tsx   # Mapa de Conexões
+        └── DashboardCruzamento.tsx  # Dashboard de Cruzamento de Dados
 ```
 
 ---
@@ -87,15 +90,28 @@ export type ViewState =
 ### Hook `useNavigationHistory`
 
 ```typescript
-const { current, canGoBack, navEntries, push, back, goTo, reset } = useNavigationHistory(initialView);
+const { current, canGoBack, canGoForward, navEntries, push, back, forward, goTo, reset } = useNavigationHistory(initialView);
 
-push(view)    // Navega para uma nova view (empilha)
-back()        // Volta uma posição na stack
-goTo(index)   // Pula para um índice específico do histórico
-reset()       // Limpa tudo e volta para a view inicial
+push(view)    // Navega para uma nova view (empilha) + sincroniza com browser history
+back()        // Volta uma posição via window.history.back() → dispara popstate
+forward()     // Avança uma posição via window.history.forward()
+goTo(index)   // Pula para um índice específico via window.history.go(delta)
+reset()       // Limpa tudo e volta para a view inicial + replaceState
 canGoBack     // true se há páginas anteriores na stack
+canGoForward  // true se há páginas posteriores (forward stack não vazio)
 navEntries    // Array completo do histórico (para exibir UI)
 ```
+
+### Integração com Browser History API
+
+O hook sincroniza automaticamente a stack de navegação com o histórico do navegador via `history.pushState` / `history.replaceState` e escuta o evento `popstate`. Isso permite:
+
+- **Botões Voltar/Avançar do navegador:** funcionam nativamente para navegar entre páginas
+- **Programmatic navigation:** `back()` e `forward()` chamam `window.history.back()` / `window.history.forward()`, que disparam `popstate`
+- **goTo():** usa `window.history.go(delta)` para navegar para um ponto específico, preservando a pilha do navegador
+- **reset():** usa `replaceState` para limpar o histórico (sem possibilidade de avançar depois)
+
+A stack completa é serializada como JSON e armazenada no `event.state` de cada entrada do navegador. No evento `popstate`, o hook restaura a stack a partir do estado salvo e atualiza o `forwardStack` (para indicar se é possível avançar).
 
 ### Fluxo
 
@@ -105,6 +121,22 @@ navEntries    // Array completo do histórico (para exibir UI)
 | CompanyDashboard | Clique político → | PoliticianDetailScreen | `[search, company, politician-detail(id)]` |
 | PoliticianDetailScreen | Voltar → | CompanyDashboard | `[search, company]` |
 | PoliticianDetailScreen | Clique empresa → | CompanyDetailScreen | `[search, company, politician-detail(id), company-detail(id)]` |
+
+### NavigationHeader (`src/components/navigation/NavigationHeader.tsx`)
+
+Barra de navegação global exibida no topo de todas as telas (sticky, backdrop-blur):
+
+- **← Botão Voltar:** desabilitado quando `canGoBack` é falso
+- **→ Botão Avançar:** desabilitado quando `canGoForward` é falso
+- **Breadcrumb:** mostra as últimas 3 páginas visitadas como links clicáveis
+- **▼ Histórico:** dropdown com a lista completa de páginas acessadas, com:
+  - Número da posição (#1, #2, ...)
+  - Ícone por tipo de view
+  - Título da página
+  - Timestamp relativo ("Há 5 min", "Há 2h")
+  - Badge com o tipo de view
+  - Destaque na página atual (azul)
+- Fechamento ao clicar fora, tecla Escape, e scroll do dropdown
 
 ### Persistência
 
@@ -347,7 +379,12 @@ Card lateral de informações de contato.
 - [x] Roteamento via stack persistida em localStorage (`useNavigationHistory`)
 - [x] Histórico completo preservado entre sessões (recarregar a página restaura o estado)
 - [x] Navegação para trás múltiplos níveis (back repetido percorre a stack)
-- [x] Suporte a `push`, `back`, `goTo(index)` e `reset`
+- [x] Suporte a `push`, `back`, `forward`, `goTo(index)` e `reset`
+- [x] Botões Voltar/Avançar do navegador funcionam nativamente (browser History API)
+- [x] Sincronização bidirecional: pushState + popstate listener com restauração da stack
+- [x] NavigationHeader global com back/forward e dropdown de histórico visual
+- [x] Breadcrumb com últimas 3 páginas clicáveis
+- [x] Dropdown de histórico completo com timestamps, ícones e navegação direta
 - [x] Botões "Voltar" em todas as telas de detalhe
 - [x] Clique em políticos na CompanyDashboard → PoliticianDetailScreen
 - [x] Clique em empresas na PersonDashboard → CompanyDetailScreen
@@ -385,6 +422,8 @@ Card lateral de informações de contato.
 ## 9. Próximos Passos Sugeridos
 
 - 🔲 **Integração com API real** — Substituir dados mockados por chamadas a API de dados públicos
+- [x] **Browser History API** — Sincronização com pushState/popstate + navegação via botões do navegador
+- [x] **NavigationHeader** — Barra global com back/forward + dropdown de histórico visual
 - 🔲 **React Router** — Substituir roteamento por estado para suportar URLs diretas e histórico
 - [x] **Histórico de buscas** — Salvo no localStorage via `useSearchHistory` (máx. 8 itens, com remoção individual)
 - 🔲 **Exportação de relatório/dossiê** — Implementar funcionalidade dos botões existentes

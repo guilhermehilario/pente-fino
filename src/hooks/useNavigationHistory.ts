@@ -14,7 +14,7 @@ export type ViewState =
 
 // ─── History entry ──────────────────────────────────────────────────────────
 
-interface NavEntry {
+export interface NavEntry {
   view: ViewState;
   title: string;
   timestamp: number;
@@ -128,52 +128,137 @@ export function useNavigationHistory(initialView: ViewState) {
     }
     return stored;
   });
+  const [canGoForward, setCanGoForward] = useState(false);
 
+  // Track forward entries for canGoForward indicator
+  const forwardStackRef = useRef<NavEntry[]>([]);
   // Track initialView in a ref so we don't re-run the effect when it changes
   const initialRef = useRef(initialView);
+  // Keep a mutable ref to the latest history for the popstate handler
+  const historyRef = useRef(history);
+  historyRef.current = history;
 
-  // Persist to localStorage on every change
+  // ── Persist to localStorage on every change ──
   useEffect(() => {
     saveHistory(history);
   }, [history]);
 
+  // ── Sync with browser history API ──
+  useEffect(() => {
+    // Set initial history state if not already set
+    const currentState = window.history.state;
+    if (!currentState || !currentState.entries) {
+      try {
+        window.history.replaceState(
+          { entries: JSON.stringify(history) },
+          ''
+        );
+      } catch {}
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+
+      if (state?.entries) {
+        try {
+          const restored: NavEntry[] = JSON.parse(state.entries);
+          if (Array.isArray(restored) && restored.length > 0) {
+            const currentLen = historyRef.current.length;
+
+            // Determine navigation direction by comparing stack sizes
+            if (restored.length < currentLen) {
+              // User went back → store the skipped entries in forward stack
+              forwardStackRef.current = historyRef.current.slice(restored.length);
+            } else if (restored.length > currentLen) {
+              // User went forward → remove entries from forward stack
+              const diff = restored.length - currentLen;
+              forwardStackRef.current = forwardStackRef.current.slice(diff);
+            }
+
+            setHistory(restored);
+            setCanGoForward(forwardStackRef.current.length > 0);
+            return;
+          }
+        } catch {}
+      }
+
+      // No valid state — user navigated outside our app history
+      // Keep current history as-is
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const current: ViewState = history[history.length - 1]?.view ?? initialRef.current;
   const canGoBack = history.length > 1;
 
-  /** Navigate forward — pushes a new entry onto the stack. */
+  /** Navigate forward — pushes a new entry onto the stack. Clears forward stack. */
   const push = useCallback((view: ViewState) => {
+    const entry: NavEntry = { view, title: resolveTitle(view), timestamp: Date.now() };
+
+    // Use function updater to preserve correct batching semantics
+    let trimmed: NavEntry[] = [];
     setHistory((prev) => {
-      const next: NavEntry = { view, title: resolveTitle(view), timestamp: Date.now() };
-      const updated = [...prev, next];
-      return updated.length > MAX_ENTRIES ? updated.slice(updated.length - MAX_ENTRIES) : updated;
+      const updated = [...prev, entry];
+      trimmed = updated.length > MAX_ENTRIES ? updated.slice(-MAX_ENTRIES) : updated;
+      return trimmed;
     });
+
+    // Side effects outside setHistory — avoids double-execution in Strict Mode
+    try {
+      window.history.pushState({ entries: JSON.stringify(trimmed) }, '');
+    } catch {}
+
+    forwardStackRef.current = [];
+    setCanGoForward(false);
   }, []);
 
-  /** Go back one step. Does nothing if already at the root. */
+  /** Go back one step using browser history API. Does nothing if already at the root. */
   const back = useCallback(() => {
-    setHistory((prev) => (prev.length <= 1 ? prev : prev.slice(0, -1)));
+    if (historyRef.current.length <= 1) return;
+    window.history.back(); // Triggers popstate → updates history
   }, []);
 
-  /** Jump to a specific index in the history. Truncates everything after it. */
+  /** Go forward one step using browser history API. */
+  const forward = useCallback(() => {
+    window.history.forward(); // Triggers popstate → updates history
+  }, []);
+
+  /**
+   * Jump to a specific index in the history stack.
+   * Navigates the browser's own history stack so forward/back remain correct.
+   */
   const goTo = useCallback((index: number) => {
-    setHistory((prev) => {
-      if (index < 0 || index >= prev.length) return prev;
-      return prev.slice(0, index + 1);
-    });
+    const prevLen = historyRef.current.length;
+    if (index < 0 || index >= prevLen) return;
+
+    const delta = index - (prevLen - 1);
+    if (delta === 0) return;
+
+    // Navigate browser history — popstate handler will update the stack
+    window.history.go(delta);
   }, []);
 
-  /** Clear history and reset to the initial view. */
+  /** Clear history and reset to the initial view. Cannot go forward after reset. */
   const reset = useCallback(() => {
     const entry: NavEntry = {
       view: initialRef.current,
       title: resolveTitle(initialRef.current),
       timestamp: Date.now(),
     };
-    setHistory([entry]);
-    // useEffect will persist automatically
+    const updated = [entry];
+
+    try {
+      window.history.replaceState({ entries: JSON.stringify(updated) }, '');
+    } catch {}
+
+    forwardStackRef.current = [];
+    setCanGoForward(false);
+    setHistory(updated);
   }, []);
 
   const navEntries = history;
 
-  return { current, canGoBack, navEntries, push, back, goTo, reset } as const;
+  return { current, canGoBack, canGoForward, navEntries, push, back, forward, goTo, reset } as const;
 }

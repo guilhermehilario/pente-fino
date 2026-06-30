@@ -1,5 +1,6 @@
 import { useNavigationHistory, type ViewState } from './hooks/useNavigationHistory';
 import { useSearchHistory } from './hooks/useSearchHistory';
+import { NavigationHeader } from './components/navigation/NavigationHeader';
 import { SearchScreen } from './screens/SearchScreen';
 import { CompanyDashboard } from './screens/CompanyDashboard';
 import { PersonDashboard } from './screens/PersonDashboard';
@@ -74,7 +75,17 @@ function searchEntity(query: string): { type: 'company'; companyId: number } | {
 }
 
 function App() {
-  const { current, push, back, reset } = useNavigationHistory({ type: 'search' });
+  const {
+    current,
+    canGoBack,
+    canGoForward,
+    navEntries,
+    push,
+    back,
+    forward,
+    goTo,
+    reset,
+  } = useNavigationHistory({ type: 'search' });
   const { searchHistory, addSearch, removeSearch, clearHistory } = useSearchHistory();
 
   const handleSearch = (query: string) => {
@@ -177,7 +188,20 @@ function App() {
     }
   };
 
-  return <>{renderView()}</>;
+  return (
+    <>
+      <NavigationHeader
+        current={current}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        navEntries={navEntries}
+        onBack={back}
+        onForward={forward}
+        onGoTo={goTo}
+      />
+      {renderView()}
+    </>
+  );
 }
 
 export default App;
