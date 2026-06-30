@@ -4,7 +4,7 @@
 // Consumer-Driven Contract: as interfaces estão em types/crossReferenceDashboard.ts
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   ArrowLeft,
   Users,
@@ -25,7 +25,7 @@ import {
   UserCheck,
   Briefcase,
 } from 'lucide-react';
-import { buildCrossReferenceFromExistingMocks } from '../data/crossReferenceMockData';
+import { fetchCrossReferenceDashboard } from '../data/crossReferenceMockData';
 import {
   formatCurrency,
   formatCurrencyCompact,
@@ -82,10 +82,40 @@ export function DashboardCruzamento({
   const [showAllContracts, setShowAllContracts] = useState(false);
   const [sortField, setSortField] = useState<SortField>('value');
   const [sortDir, setSortDir] = useState<SortDirection>('desc');
+  const [data, setData] = useState<CrossReferenceDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // ── Data ──
-  const data: CrossReferenceDashboardData = useMemo(() => buildCrossReferenceFromExistingMocks(), []);
-  const { summary, crossReferences, topContracts, politiciansByValue, companiesByValue } = data;
+  // ── Data (fetch from API) ──
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    fetchCrossReferenceDashboard()
+      .then((result) => {
+        if (!cancelled) {
+          setData(result);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
+          setLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const { summary, crossReferences, topContracts, politiciansByValue, companiesByValue } = data ?? {
+    summary: { totalPoliticians: 0, totalCompanies: 0, totalCrossReferences: 0, totalContracts: 0, totalSuspiciousValue: 0, highSeverityCount: 0, mediumSeverityCount: 0, lowSeverityCount: 0 },
+    crossReferences: [],
+    topContracts: [],
+    politiciansByValue: [],
+    companiesByValue: [],
+  };
 
   // ── Filtered & Sorted Data ──
   const filteredCross = useMemo(() => {
@@ -159,7 +189,25 @@ export function DashboardCruzamento({
           <ArrowLeft size={16} /> Voltar para Busca
         </button>
 
-        {/* ── Header ── */}
+        {/* ── Loading / Error State ── */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="w-10 h-10 border-4 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+            <p className="text-sm text-slate-400">Carregando dados do dashboard...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
+            <ShieldAlert size={24} className="mx-auto mb-2 text-red-400" />
+            <p className="text-sm text-red-400 font-medium">Erro ao carregar dados</p>
+            <p className="text-xs text-slate-400 mt-1">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+          {/* ── Header ── */}
         <header className="bg-gradient-to-br from-slate-800/80 to-slate-800/40 p-6 md:p-8 rounded-2xl border border-slate-700/50 backdrop-blur-md shadow-lg">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center gap-5">
@@ -633,6 +681,9 @@ export function DashboardCruzamento({
         <div className="text-center text-xs text-slate-600 pt-4 pb-8 border-t border-slate-800">
           Dados mockados para desenvolvimento · Contrato: v1.0 · Consumer-Driven Contract
         </div>
+          </>
+        )}
+
       </div>
     </div>
   );
