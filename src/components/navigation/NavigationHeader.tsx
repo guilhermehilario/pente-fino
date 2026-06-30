@@ -129,6 +129,7 @@ export function NavigationHeader({
             {navEntries.slice(-3).map((entry, idx) => {
               const isLast = idx === navEntries.slice(-3).length - 1;
               const globalIndex = navEntries.length - 3 + idx;
+              const icon = viewIcons[entry.view.type] ?? '📄';
               return (
                 <button
                   key={globalIndex}
@@ -136,14 +137,24 @@ export function NavigationHeader({
                     onGoTo(globalIndex);
                     setShowHistory(false);
                   }}
-                  className={`text-sm truncate max-w-[160px] px-2 py-1 rounded-md transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 text-sm truncate max-w-[180px] px-2 py-1 rounded-md transition-all whitespace-nowrap ${
                     isLast
                       ? 'text-blue-400 font-medium cursor-default'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 cursor-pointer'
                   }`}
                   title={isLast ? `Página atual: ${entry.title}` : `Ir para: ${entry.title}`}
                 >
-                  {entry.title}
+                  {/* Icon */}
+                  <span className="flex-shrink-0 text-sm leading-none">{icon}</span>
+
+                  {/* Title — animated on the current breadcrumb */}
+                  {isLast ? (
+                    <span key={entry.title} className="animate-title-enter truncate">
+                      {entry.title}
+                    </span>
+                  ) : (
+                    <span className="truncate">{entry.title}</span>
+                  )}
                 </button>
               );
             })}
