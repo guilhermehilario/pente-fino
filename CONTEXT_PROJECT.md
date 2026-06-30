@@ -36,10 +36,10 @@ pega-corrupcao/
 ├── CONTEXT_PROJECT.md               ← Este documento
 └── src/
     ├── main.tsx
-    ├── App.tsx                      # Roteador com stack de navegação + NavigationHeader
-    ├── index.css                    # Tema Tailwind + animação scanner
+    ├── App.tsx                      # Roteador + ViewTransition + NavigationHeader
+    ├── index.css                    # Tema Tailwind + animações (scanner, slide, title)
     ├── hooks/
-    │   └── useNavigationHistory.ts  # Hook de navegação em stack + localStorage + browser History API
+    │   └── useNavigationHistory.ts  # Hook de navegação em stack + localStorage + Browser History API
     ├── data/
     │   ├── mockData.ts              # Dados mockados + tipos expandidos
     │   └── graphData.ts             # Transformação de dados para grafo
@@ -53,10 +53,12 @@ pega-corrupcao/
     │   └── tableStyle.ts
     ├── components/
     │   ├── navigation/
-    │   │   └── NavigationHeader.tsx  # Barra de navegação global (back/forward + histórico visual)
+    │   │   └── NavigationHeader.tsx  # Barra de navegação global (back/forward + breadcrumb + histórico visual)
     │   └── ui/
     │       ├── StatCard.tsx
-    │       └── ContactInfoCard.tsx
+    │       ├── ContactInfoCard.tsx
+    │       ├── ConfirmDialog.tsx     # Modal de confirmação reutilizável
+    │       └── ViewTransition.tsx    # Transição animada entre telas (slide-in)
     └── screens/
         ├── SearchScreen.tsx
         ├── CompanyDashboard.tsx
@@ -71,7 +73,7 @@ pega-corrupcao/
 
 ## 3. Arquitetura de Roteamento
 
-O projeto **não usa React Router**. O roteamento é gerenciado pelo hook `useNavigationHistory` (`src/hooks/useNavigationHistory.ts`), que implementa uma **stack de navegação** persistida em `localStorage`.
+O projeto **não usa React Router**. O roteamento é gerenciado pelo hook `useNavigationHistory` (`src/hooks/useNavigationHistory.ts`), que implementa uma **stack de navegação** persistida em `localStorage` e sincronizada com a **Browser History API**.
 
 ### ViewState
 
@@ -80,63 +82,51 @@ Tipos de view são uma discriminated union simples — sem `parentView` ou qualq
 ```typescript
 export type ViewState =
   | { type: 'search' }
-  | { type: 'company' }
-  | { type: 'person' }
+  | { type: 'company'; companyId: number }
+  | { type: 'person'; personId: number }
   | { type: 'company-detail'; companyId: number }
   | { type: 'politician-detail'; politicianId: number }
-  | { type: 'graph'; centerType?: 'politician' | 'company'; centerId?: number };
+  | { type: 'graph'; centerType?: 'politician' | 'company'; centerId?: number }
+  | { type: 'cross-reference' };
 ```
 
 ### Hook `useNavigationHistory`
 
 ```typescript
-const { current, canGoBack, canGoForward, navEntries, push, back, forward, goTo, reset } = useNavigationHistory(initialView);
+const {
+  current, canGoBack, canGoForward, lastDirection, navEntries,
+  push, back, forward, replace, goTo, reset
+} = useNavigationHistory(initialView);
 
-push(view)    // Navega para uma nova view (empilha) + sincroniza com browser history
+push(view)    // Navega para nova view (empilha) + pushState() no browser
+replace(view) // Substitui a última entrada na stack + replaceState() — evita duplicidade para mesma entidade
 back()        // Volta uma posição via window.history.back() → dispara popstate
 forward()     // Avança uma posição via window.history.forward()
-goTo(index)   // Pula para um índice específico via window.history.go(delta)
+goTo(index)   // Pula para índice específico via window.history.go(delta)
 reset()       // Limpa tudo e volta para a view inicial + replaceState
-canGoBack     // true se há páginas anteriores na stack
+
+canGoBack     // true se há páginas anteriores na stack (length > 1)
 canGoForward  // true se há páginas posteriores (forward stack não vazio)
+lastDirection // 'forward' | 'backward' — usado pelo ViewTransition para animação
 navEntries    // Array completo do histórico (para exibir UI)
 ```
 
 ### Integração com Browser History API
 
-O hook sincroniza automaticamente a stack de navegação com o histórico do navegador via `history.pushState` / `history.replaceState` e escuta o evento `popstate`. Isso permite:
+O hook sincroniza automaticamente a stack de navegação com o histórico do navegador:
 
-- **Botões Voltar/Avançar do navegador:** funcionam nativamente para navegar entre páginas
-- **Programmatic navigation:** `back()` e `forward()` chamam `window.history.back()` / `window.history.forward()`, que disparam `popstate`
-- **goTo():** usa `window.history.go(delta)` para navegar para um ponto específico, preservando a pilha do navegador
-- **reset():** usa `replaceState` para limpar o histórico (sem possibilidade de avançar depois)
+1. **`push(view)`** — Adiciona entrada à stack + `history.pushState({ entries: JSON.stringify(stack) })`
+2. **`replace(view)`** — Substitui última entrada (slice(0,-1) + new) + `history.replaceState()`
+3. **`back()`** — Chama `window.history.back()` → dispara `popstate` → handler restaura a stack
+4. **`forward()`** — Chama `window.history.forward()` → dispara `popstate`
+5. **`goTo(index)`** — Chama `window.history.go(delta)` → `popstate` restaura a stack alvo
+6. **`reset()`** — `replaceState` com apenas a view inicial (sem forward)
 
-A stack completa é serializada como JSON e armazenada no `event.state` de cada entrada do navegador. No evento `popstate`, o hook restaura a stack a partir do estado salvo e atualiza o `forwardStack` (para indicar se é possível avançar).
+**Evento `popstate`:** O handler compara `restored.length` vs `historyRef.current.length` para determinar direção:
+- `restored < current` → usuário voltou → entradas descartadas vão para `forwardStack` → `lastDirection = 'backward'`
+- `restored > current` → usuário avançou → `forwardStack` é reduzido → `lastDirection = 'forward'`
 
-### Fluxo
-
-| Origem | Ação | Destino | Stack após ação |
-|---|---|---|---|
-| SearchScreen | Pesquisa → | CompanyDashboard | `[search, company]` |
-| CompanyDashboard | Clique político → | PoliticianDetailScreen | `[search, company, politician-detail(id)]` |
-| PoliticianDetailScreen | Voltar → | CompanyDashboard | `[search, company]` |
-| PoliticianDetailScreen | Clique empresa → | CompanyDetailScreen | `[search, company, politician-detail(id), company-detail(id)]` |
-
-### NavigationHeader (`src/components/navigation/NavigationHeader.tsx`)
-
-Barra de navegação global exibida no topo de todas as telas (sticky, backdrop-blur):
-
-- **← Botão Voltar:** desabilitado quando `canGoBack` é falso
-- **→ Botão Avançar:** desabilitado quando `canGoForward` é falso
-- **Breadcrumb:** mostra as últimas 3 páginas visitadas como links clicáveis
-- **▼ Histórico:** dropdown com a lista completa de páginas acessadas, com:
-  - Número da posição (#1, #2, ...)
-  - Ícone por tipo de view
-  - Título da página
-  - Timestamp relativo ("Há 5 min", "Há 2h")
-  - Badge com o tipo de view
-  - Destaque na página atual (azul)
-- Fechamento ao clicar fora, tecla Escape, e scroll do dropdown
+**forwardStack:** Armazena entradas "futuras" quando o usuário volta, permitindo `canGoForward` e `forward()`.
 
 ### Persistência
 
@@ -147,27 +137,110 @@ Barra de navegação global exibida no topo de todas as telas (sticky, backdrop-
 - Validação de schema: entradas carregadas passam por `isValidEntry()` — entradas com campos ausentes ou tipos desconhecidos são descartadas
 - Ao recarregar a página, a última sessão é restaurada automaticamente
 
-### Lógica de busca
+### Fluxo de Navegação
 
-A função `searchEntity(query)` em `App.tsx` implementa busca por **scoring**:
+| Origem | Ação | Destino | Método | Stack após ação |
+|---|---|---|---|---|
+| SearchScreen | Pesquisa → | CompanyDashboard | `push()` | `[search, company]` |
+| SearchScreen | Pesquisa → | PersonDashboard | `push()` | `[search, person]` |
+| CompanyDashboard | "Ver Detalhes" → | CompanyDetailScreen | `replace()` | `[search, company-detail]` (substitui company) |
+| PersonDashboard | "Ver Detalhes" → | PoliticianDetailScreen | `replace()` | `[search, politician-detail]` (substitui person) |
+| CompanyDashboard | Clique político → | PoliticianDetailScreen | `push()` | `[search, company, politician-detail]` |
+| PersonDashboard | Clique empresa → | CompanyDetailScreen | `push()` | `[search, person, company-detail]` |
+| CompanyDetailScreen | Clique político → | PoliticianDetailScreen | `push()` | `[search, company-detail, politician-detail]` |
+| PoliticianDetailScreen | Clique empresa → | CompanyDetailScreen | `push()` | `[search, company-detail, politician-detail, company-detail]` |
+| Qualquer tela | "Mapa de Conexões" → | NetworkGraph | `push()` | `[..., graph]` |
+| Qualquer tela | Voltar → | Anterior | `back()` | Remove último |
 
-| Critério | Score | Mín. caracteres |
-|---|---|---|
-| Nome exato | 100 | — |
-| CNPJ corresponde | 90 | 8 dígitos |
-| Nome contém a query | 80 | 2 |
-| Palavra começa com a query | 50 | 3 |
-| Cargo contém a query | 40 | 3 |
-
-- Ordena resultados por score (melhor primeiro)
-- Fallback para político se query contém "deputado", "senador", "prefeito", etc.
-- Fallback para empresa (id:1) se nada encontrado
+**Nota:** `replace()` é usado exclusivamente para o botão "Ver Detalhes" (CompanyDashboard → CompanyDetailScreen, PersonDashboard → PoliticianDetailScreen) para evitar duplicidade no histórico — ambas as telas representam a mesma entidade em diferentes níveis de detalhe. Navegações entre entidades distintas (ex: clicar em político na tabela) sempre usam `push()`.
 
 ---
 
-## 4. Telas Implementadas
+## 4. Componentes de Navegação
 
-### 4.1 SearchScreen (`src/screens/SearchScreen.tsx`)
+### 4.1 NavigationHeader (`src/components/navigation/NavigationHeader.tsx`)
+
+Barra de navegação global exibida no topo de todas as telas (sticky, backdrop-blur z-50).
+
+**Funcionalidades:**
+
+- **← Botão Voltar:** desabilitado quando `canGoBack` é falso. Chama `window.history.back()`
+- **→ Botão Avançar:** desabilitado quando `canGoForward` é falso. Chama `window.history.forward()`
+- **Breadcrumb:** mostra as últimas 3 páginas visitadas como links clicáveis, com:
+  - Ícone emoji por tipo de view (`viewIcons`): 🔍 busca, 🏢 empresa, 👤 pessoa/político, 🏭 detalhe empresa, 🔗 grafo, ⚖️ cruzamento
+  - Título da página atual com animação `animate-title-enter` (fade + translateY) ao navegar
+  - Itens não-atuais clicáveis que chamam `goTo(index)`
+  - Se houver mais de 3 entradas, mostra `...` antes das últimas 3
+- **▼ Dropdown de histórico:** botão toggle que abre/fecha painel completo:
+  - Número da posição (#1, #2, ...)
+  - Ícone por tipo de view
+  - Título da página
+  - Timestamp relativo ("Agora", "Há 5 min", "Há 2h", "Há 3d")
+  - Badge com o tipo de view (`entry.view.type`)
+  - Destaque na página atual (fundo azul, borda esquerda azul)
+  - Scroll vertical se muitas entradas (max-h-[50vh])
+- **Fechamento:** ao clicar fora, tecla Escape, e scroll do dropdown
+- **Acessibilidade:** `aria-label`, `aria-expanded`, `role="dialog"`
+
+**Props:**
+```typescript
+interface NavigationHeaderProps {
+  current: ViewState;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  navEntries: NavEntry[];
+  onBack: () => void;
+  onForward: () => void;
+  onGoTo: (index: number) => void;
+}
+```
+
+### 4.2 ViewTransition (`src/components/ui/ViewTransition.tsx`)
+
+Componente que envolve o conteúdo das telas com animação slide-in.
+
+**Comportamento:**
+- Usa `key={viewKey}` para forçar React a montar novo elemento a cada mudança de view → animação CSS dispara automaticamente
+- Pula animação no **primeiro carregamento** (usa `useRef` para detectar first render)
+- Direções:
+  - `forward`: `animate-slide-in-right` (slide + fade de 40px da direita, 250ms, ease-out)
+  - `backward`: `animate-slide-in-left` (slide + fade de 40px da esquerda)
+  - `none`: sem animação
+- Parent container com `overflow-hidden` e `relative` para clipping durante a transição
+- `min-h-screen` para consistência de altura
+
+**Props:**
+```typescript
+interface ViewTransitionProps {
+  viewKey: string;
+  direction: 'forward' | 'backward' | 'none';
+  children: ReactNode;
+}
+```
+
+**CSS (`src/index.css`):**
+```css
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes title-enter {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+```
+
+---
+
+## 5. Telas Implementadas
+
+### 5.1 SearchScreen (`src/screens/SearchScreen.tsx`)
 
 **Funcionalidades:**
 - Logo com ícone de impressão digital e animação de scanner (`animate-scanner`)
@@ -184,14 +257,17 @@ A função `searchEntity(query)` em `App.tsx` implementa busca por **scoring**:
 - Botão "Limpar todos" para remover todos os filtros ativos
 - Layout centralizado vertical e horizontalmente
 
-**Props:** `{ onSearch: (query: string) => void; searchHistory: string[]; onRemoveSearch: (query: string) => void; onClearHistory: () => void }`
+**Props:** `{ onSearch: (query: string) => void; searchHistory: string[]; onRemoveSearch: (query: string) => void; onClearHistory: () => void; onCrossReferenceClick?: () => void }`
 
-### 4.2 CompanyDashboard (`src/screens/CompanyDashboard.tsx`)
+### 5.2 CompanyDashboard (`src/screens/CompanyDashboard.tsx`)
+
+Tela de **resultado da busca por empresa** (visão básica).
 
 **Funcionalidades:**
-- Botão "Voltar para a Busca" no topo
 - **Header:** Ícone gradiente azul-indigo, nome da empresa, status badge (Ativa), categoria
-- **Ações:** Botões "Exportar Relatório" e "Ver Detalhes"
+- **Ações no header:**
+  - "Mapa de Conexões" → `onGraphClick` (push para graph)
+  - "Ver Detalhes" → `onDetailClick` (replace para company-detail — não duplica no histórico)
 - **4 StatCards:** CNPJ, Valor de Mercado, Data de Criação, Políticos Ligados
 - **Tabela com abas:**
   - Aba "Políticos": Nome (com avatar), Cargo/Função (badge), Partido — **clicável → PoliticianDetailScreen**
@@ -200,26 +276,30 @@ A função `searchEntity(query)` em `App.tsx` implementa busca por **scoring**:
 
 **Props:** `{ companyId: number; onBack: () => void; onPoliticianClick?: (id: number) => void; onGraphClick?: () => void; onDetailClick?: () => void }`
 
-### 4.3 PersonDashboard (`src/screens/PersonDashboard.tsx`)
+### 5.3 PersonDashboard (`src/screens/PersonDashboard.tsx`)
+
+Tela de **resultado da busca por pessoa** (visão básica).
 
 **Funcionalidades:**
-- Botão "Voltar para a Busca" no topo
-- **Header:** Ícone gradiente índigo-roxo, nome da pessoa, status badge (Ativo), "Agente Público"
-- **Ações:** Botões "Exportar Dossiê" e "Ver Transações"
+- **Header:** Ícone gradiente índigo-roxo, nome da pessoa, status badge (Ativo), cargo e partido
+- **Ações no header:**
+  - "Mapa de Conexões" → `onGraphClick` (push para graph)
+  - "Ver Detalhes" → `onDetailClick` (replace para politician-detail — não duplica no histórico)
 - **4 StatCards:** Cargo Atual, Salário Bruto, Patrimônio Declarado, Empresas Ligadas
 - **Tabela com abas:**
   - Aba "Empresas": Nome (com ícone), CNPJ, Relação/Vínculo — **clicável → CompanyDetailScreen**
   - Aba "Pessoas": Nome (com avatar), Cargo (badge), Relação/Vínculo
 - **Sidebar:** Card de Contato com labels personalizáveis
 
-**Props:** `{ personId: number; onBack: () => void; onCompanyClick?: (id: number) => void; onGraphClick?: () => void }`
+**Props:** `{ personId: number; onBack: () => void; onDetailClick?: () => void; onCompanyClick?: (id: number) => void; onGraphClick?: () => void }`
 
-### 4.4 PoliticianDetailScreen (`src/screens/PoliticianDetailScreen.tsx`)
+### 5.4 PoliticianDetailScreen (`src/screens/PoliticianDetailScreen.tsx`)
+
+Tela de **detalhamento completo do político** (visão detalhada, acessível via "Ver Detalhes" no PersonDashboard ou clicando em político nas tabelas).
 
 **Funcionalidades:**
-- Botão "Voltar para Resultados" (restaura tela anterior com contexto)
 - **Header:** Ícone gradiente índigo-roxo, nome, status, cargo e partido
-- **Ações:** "Mapa de Conexões" (com `Share2`), "Exportar Dossiê" e "Ver Transações"
+- **Ações no header:** "Mapa de Conexões", "Exportar Dossiê", "Ver Transações"
 - **Painel de Alertas & Suspeitas:** Cards com indicador vermelho/laranja/amarelo
 - **4 StatCards:** Cargo Atual, Salário, Patrimônio, Data de Nascimento
 - **Biografia:** Texto completo do político
@@ -230,12 +310,13 @@ A função `searchEntity(query)` em `App.tsx` implementa busca por **scoring**:
 
 **Props:** `{ politician: PoliticianDetail; onBack: () => void; onCompanyClick: (id: number) => void; onGraphClick?: () => void }`
 
-### 4.5 CompanyDetailScreen (`src/screens/CompanyDetailScreen.tsx`)
+### 5.5 CompanyDetailScreen (`src/screens/CompanyDetailScreen.tsx`)
+
+Tela de **detalhamento completo da empresa** (visão detalhada, acessível via "Ver Detalhes" no CompanyDashboard ou clicando em empresa nas tabelas).
 
 **Funcionalidades:**
-- Botão "Voltar para Resultados" (restaura tela anterior com contexto)
 - **Header:** Ícone gradiente azul-indigo, nome, status, setor
-- **Ações:** "Mapa de Conexões" (com `Share2`), "Exportar Relatório" e "Ver Contratos"
+- **Ações no header:** "Mapa de Conexões", "Exportar Relatório", "Ver Contratos"
 - **Painel de Alertas & Suspeitas:** Cards com indicador vermelho/laranja/amarelo
 - **4 StatCards:** CNPJ, Faturamento Anual, Valor de Mercado, Funcionários
 - **Contratos com Órgãos Públicos:** Tabela com ano, órgão, descrição e valor (expansível)
@@ -247,7 +328,7 @@ A função `searchEntity(query)` em `App.tsx` implementa busca por **scoring**:
 
 **Props:** `{ company: CompanyDetail; onBack: () => void; onPoliticianClick: (id: number) => void; onGraphClick?: () => void }`
 
-### 4.6 NetworkGraphScreen (`src/screens/NetworkGraphScreen.tsx`) — NOVO
+### 5.6 NetworkGraphScreen (`src/screens/NetworkGraphScreen.tsx`)
 
 **Funcionalidades:**
 - Visualização interativa de grafo de conexões entre políticos e empresas (via `react-force-graph-2d`)
@@ -270,19 +351,43 @@ A função `searchEntity(query)` em `App.tsx` implementa busca por **scoring**:
 - `buildFocusedGraph(type, id, maxDepth)` — Constrói subgrafo BFS centrado em uma entidade até `maxDepth` níveis de profundidade
 - Deduplicação de arestas por chave canônica (source < target)
 
-**Props:**
-```typescript
-interface NetworkGraphScreenProps {
-  initialCenter?: { type: 'politician' | 'company'; id: number };
-  onBack: () => void;
-  onPoliticianClick: (id: number) => void;
-  onCompanyClick: (id: number) => void;
-}
-```
+**Props:** `{ initialCenter?: { type: 'politician' | 'company'; id: number }; onBack: () => void; onPoliticianClick: (id: number) => void; onCompanyClick: (id: number) => void; }`
+
+### 5.7 DashboardCruzamento (`src/screens/DashboardCruzamento.tsx`)
+
+Dashboard macro-investigativo que cruza dados entre PEPs (Pessoas Expostas Politicamente) e Empresas. Consome dados via contrato CDC definido em `src/types/crossReferenceDashboard.ts`.
+
+**Funcionalidades:**
+- Indicador de alto risco com valor total sob suspeita
+- 4 KPI cards: Políticos Mapeados, Empresas Investigadas, Contratos Suspeitos, Valor Sob Suspeita
+- Barra de distribuição de alertas (alta/média/baixa severidade)
+- Tabela de cruzamentos Político × Empresa com busca, ordenação por severidade/nome/valor
+- Ranking de políticos e empresas por valor de contrato
+- Top contratos suspeitos com barra de valor proporcional
+
+**Props:** `{ onBack: () => void; onPoliticianClick?: (id: number) => void; onCompanyClick?: (id: number) => void; onGraphClick?: () => void }`
 
 ---
 
-## 5. Sistema de Estilo Global (`src/globalStyle/`)
+## 6. Lógica de Busca
+
+A função `searchEntity(query)` em `App.tsx` implementa busca por **scoring**:
+
+| Critério | Score | Mín. caracteres |
+|---|---|---|
+| Nome exato | 100 | — |
+| CNPJ corresponde | 90 | 8 dígitos |
+| Nome contém a query | 80 | 2 |
+| Palavra começa com a query | 50 | 3 |
+| Cargo contém a query | 40 | 3 |
+
+- Ordena resultados por score (melhor primeiro)
+- Fallback para político se query contém "deputado", "senador", "prefeito", etc.
+- Fallback para empresa (id:1) se nada encontrado
+
+---
+
+## 7. Sistema de Estilo Global (`src/globalStyle/`)
 
 O projeto usa um padrão de **constantes de classes Tailwind** exportadas como objetos JavaScript, centralizadas em arquivos por categoria:
 
@@ -309,7 +414,7 @@ import { containers, buttons, texts } from '../globalStyle';
 
 ---
 
-## 6. Componentes Compartilhados
+## 8. Componentes Compartilhados
 
 ### StatCard (`src/components/ui/StatCard.tsx`)
 
@@ -342,9 +447,25 @@ Card lateral de informações de contato.
 | `PhoneIcon?` | LucideIcon | `Phone` |
 | `AddressIcon?` | LucideIcon | `MapPin` |
 
+### ConfirmDialog (`src/components/ui/ConfirmDialog.tsx`)
+
+Modal de confirmação reutilizável com 3 variantes visuais.
+
+**Props:**
+| Prop | Tipo | Default |
+|---|---|---|
+| `open` | boolean | — |
+| `title` | string | — |
+| `description` | string | — |
+| `confirmLabel` | string | — |
+| `cancelLabel` | string | — |
+| `variant?` | `'warning' \| 'danger' \| 'info'` | `'warning'` |
+| `onConfirm` | () => void | — |
+| `onCancel` | () => void | — |
+
 ---
 
-## 7. Dados Mockados (`src/data/mockData.ts`)
+## 9. Dados Mockados (`src/data/mockData.ts`)
 
 ### Tipos exportados
 - `PoliticianDetail` — Interface completa com alerts, politicalCareer, legalProcesses, linkedCompanies
@@ -365,34 +486,39 @@ Card lateral de informações de contato.
 
 ---
 
-## 8. Funcionalidades Implementadas (Resumo)
+## 10. Funcionalidades Implementadas (Resumo)
 
 ### Telas
-- [x] **SearchScreen** — Busca, filtros avançados, upload de arquivos
-- [x] **CompanyDashboard** — Visão geral da empresa com tabelas de políticos e sócios
-- [x] **PersonDashboard** — Visão geral da pessoa com tabelas de empresas e pessoas ligadas
-- [x] **PoliticianDetailScreen** — Detalhamento completo com alertas, biografia, carreira, processos, empresas ligadas (acessível clicando em político nas tabelas)
-- [x] **CompanyDetailScreen** — Detalhamento completo com alertas, contratos suspeitos, sócios e políticos ligados (acessível clicando em empresa nas tabelas)
+- [x] **SearchScreen** — Busca, filtros avançados, upload de arquivos, atalho para Dashboard de Cruzamento
+- [x] **CompanyDashboard** — Visão geral da empresa (resultado de busca), botões Mapa de Conexões + Ver Detalhes
+- [x] **PersonDashboard** — Visão geral da pessoa (resultado de busca), botões Mapa de Conexões + Ver Detalhes
+- [x] **PoliticianDetailScreen** — Detalhamento completo com alertas, biografia, carreira, processos, empresas ligadas
+- [x] **CompanyDetailScreen** — Detalhamento completo com alertas, contratos suspeitos, sócios e políticos ligados
 - [x] **NetworkGraphScreen** — Mapa interativo de conexões entre políticos e empresas via react-force-graph-2d
+- [x] **DashboardCruzamento** — Dashboard macro-investigativo com cruzamento de dados PEP × Empresa
 
 ### Navegação
 - [x] Roteamento via stack persistida em localStorage (`useNavigationHistory`)
 - [x] Histórico completo preservado entre sessões (recarregar a página restaura o estado)
 - [x] Navegação para trás múltiplos níveis (back repetido percorre a stack)
-- [x] Suporte a `push`, `back`, `forward`, `goTo(index)` e `reset`
-- [x] Botões Voltar/Avançar do navegador funcionam nativamente (browser History API)
-- [x] Sincronização bidirecional: pushState + popstate listener com restauração da stack
-- [x] NavigationHeader global com back/forward e dropdown de histórico visual
-- [x] Breadcrumb com últimas 3 páginas clicáveis
-- [x] Dropdown de histórico completo com timestamps, ícones e navegação direta
-- [x] Botões "Voltar" em todas as telas de detalhe
-- [x] Clique em políticos na CompanyDashboard → PoliticianDetailScreen
-- [x] Clique em empresas na PersonDashboard → CompanyDetailScreen
-- [x] Clique em políticos na CompanyDetailScreen → PoliticianDetailScreen
-- [x] Clique em empresas na PoliticianDetailScreen → CompanyDetailScreen
-- [x] Botão "Mapa de Conexões" nos dashboards (CompanyDashboard e PersonDashboard)
-- [x] Botão "Mapa de Conexões" nas telas de detalhe (PoliticianDetailScreen e CompanyDetailScreen)
-- [x] Clique em nós do grafo → navega para tela de detalhes
+- [x] Suporte a `push`, `replace`, `back`, `forward`, `goTo(index)` e `reset`
+- [x] **Browser History API:** pushState + popstate listener com restauração da stack e forwardStack tracking
+- [x] **Botões Voltar/Avançar do navegador** funcionam nativamente
+- [x] **`replace()`** — Substitui entrada na stack ao invés de empilhar (evita duplicidade CompanyDashboard → CompanyDetailScreen)
+- [x] **NavigationHeader** — Barra global sticky com back/forward + breadcrumb com ícones + dropdown de histórico
+- [x] **Breadcrumb animado** — Últimas 3 páginas como links clicáveis + ícone por view + `animate-title-enter` no título atual
+- [x] **Dropdown de histórico** — Lista completa com timestamps, ícones, position badge, navegação direta, fechamento ao clicar fora / Escape
+- [x] **ViewTransition** — Animação slide-in (forward: da direita, backward: da esquerda, 250ms, ease-out)
+- [x] **Direção trackeada** — `lastDirection` no hook setado em push/back/forward/popstate
+- [x] **Primeiro load sem animação** — ViewTransition usa ref para pular animação no mount inicial
+- Clique em entidades nas tabelas:
+  - [x] CompanyDashboard → PoliticianDetailScreen (push)
+  - [x] PersonDashboard → CompanyDetailScreen (push)
+  - [x] CompanyDetailScreen → PoliticianDetailScreen (push)
+  - [x] PoliticianDetailScreen → CompanyDetailScreen (push)
+  - [x] NetworkGraphScreen → detalhes da entidade (push)
+- [x] Botão "Mapa de Conexões" em todas as telas de resultado e detalhe
+- [x] Botão "Ver Detalhes" nos dashboards (replace — não duplica no histórico)
 
 ### Visualização de Grafo
 - [x] Grafo interativo com nós (políticos/empresas) e arestas codificadas por severidade
@@ -409,38 +535,44 @@ Card lateral de informações de contato.
 - [x] Tabelas de contratos suspeitos com valores
 - [x] Seções expansíveis (carreira, processos, contratos)
 - [x] Sidebar de empresas ligadas com badges de relação
-- [x] Indicador visual de clique (seta `ChevronRight`) nas linhas clicáveis das tabelas (opacidade `group-hover:opacity-100` + deslocamento)
-- [x] Modal de confirmação (`ConfirmDialog`) antes de navegar/pesquisar com filtros ativos ou limpar todos os filtros
+- [x] Indicador visual de clique (seta `ChevronRight`) nas linhas clicáveis das tabelas
+- [x] Modal de confirmação (`ConfirmDialog`) com 3 variantes (warning, danger, info), Escape e acessibilidade
 - [x] Busca textual com scoring inteligente (nome exato, CNPJ, contém, começa com, cargo)
 - [x] Histórico de buscas recentes salvo em localStorage (`useSearchHistory`, máx. 8 itens)
 - [x] Validação de schema do `ViewState` ao carregar histórico do localStorage (`isValidEntry`)
 - [x] Design responsivo com hover states e transições
-- [x] Diálogo `ConfirmDialog` reutilizável com 3 variantes (warning, danger, info), suporte a tecla Escape e acessibilidade (`role="dialog"`, `aria-modal`)
+- [x] Animações CSS: scanner, slide-in-right, slide-in-left, title-enter
 
 ---
 
-## 9. Próximos Passos Sugeridos
+## 11. Próximos Passos Sugeridos
 
 - 🔲 **Integração com API real** — Substituir dados mockados por chamadas a API de dados públicos
 - [x] **Browser History API** — Sincronização com pushState/popstate + navegação via botões do navegador
-- [x] **NavigationHeader** — Barra global com back/forward + dropdown de histórico visual
-- 🔲 **React Router** — Substituir roteamento por estado para suportar URLs diretas e histórico
-- [x] **Histórico de buscas** — Salvo no localStorage via `useSearchHistory` (máx. 8 itens, com remoção individual)
+- [x] **NavigationHeader** — Barra global com back/forward + breadcrumb + dropdown de histórico
+- [x] **ViewTransition** — Animação slide-in entre telas com direção (forward/backward)
+- [x] **replace()** — Substituição de entrada no histórico para evitar duplicidade empresa/pessoa
+- 🔲 **React Router** — Substituir roteamento por estado para suportar URLs diretas
+- [x] **Histórico de buscas** — Salvo no localStorage via `useSearchHistory` (máx. 8 itens)
 - 🔲 **Exportação de relatório/dossiê** — Implementar funcionalidade dos botões existentes
 - 🔲 **Autenticação** — Login para salvar investigações
-- 🔲 **Testes unitários** — Adicionar testes para componentes e navegação
+- 🔲 **Testes unitários** — Adicionar testes para componentes, navegação e transições
 - 🔲 **Página inicial** — Landing page institucional antes da busca
 
 ---
 
-## 10. Convenções de Código
+## 12. Convenções de Código
 
 - **Nomenclatura:** PascalCase para componentes (`CompanyDetailScreen.tsx`), camelCase para utilitários
 - **Imports:** Agrupados por tipo (React, bibliotecas, internos)
 - **Tipagem:** Props sempre tipadas com `interface` ou `type`; estado de navegação com discriminated union
 - **Estilo:** Apenas Tailwind via constantes em `globalStyle/` (sem CSS modules ou styled-components)
 - **Exportações:** Nomeadas (sem `export default`)
-- **Navegação:** Usar `useNavigationHistory` hook (stack + localStorage); `push()` para avançar, `back()` para voltar
+- **Navegação:** Usar `useNavigationHistory` hook (stack + localStorage + Browser History API):
+  - `push()` para navegações entre entidades distintas
+  - `replace()` para mudança de nível de detalhe da mesma entidade
+  - `back()` / `forward()` para navegação nativa (delega ao browser)
+- **Transições:** `ViewTransition` envolvendo o conteúdo em `App.tsx` com `viewKey` e `direction`
 - **Dados mockados:** Tipos reutilizáveis (`PoliticianDetail`, `CompanyDetail`) para facilitar migração para API
 
 ---
