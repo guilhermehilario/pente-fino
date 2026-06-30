@@ -102,6 +102,7 @@ function App() {
     lastDirection,
     navEntries,
     push,
+    replace,
     back,
     forward,
     goTo,
@@ -134,7 +135,7 @@ function App() {
             onBack={() => back()}
             onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
             onGraphClick={() => push({ type: 'graph', centerType: 'company', centerId: current.companyId })}
-            onDetailClick={() => push({ type: 'company-detail', companyId: current.companyId })}
+            onDetailClick={() => replace({ type: 'company-detail', companyId: current.companyId })}
           />
         );
 
@@ -143,6 +144,7 @@ function App() {
           <PersonDashboard
             personId={current.personId}
             onBack={() => back()}
+            onDetailClick={() => replace({ type: 'politician-detail', politicianId: current.personId })}
             onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}
             onGraphClick={() => push({ type: 'graph', centerType: 'politician', centerId: current.personId })}
           />
