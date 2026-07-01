@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { AuthProvider } from './context/AuthContext';
+import { PreferencesProvider } from './context/PreferencesContext';
 import { useNavigationHistory, type ViewState } from './hooks/useNavigationHistory';
 import { useSearchHistory } from './hooks/useSearchHistory';
 import { NavigationHeader } from './components/navigation/NavigationHeader';
@@ -223,23 +224,25 @@ function App() {
 
   return (
     <AuthProvider>
-      <NavigationHeader
-        current={current}
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        navEntries={navEntries}
-        onBack={back}
-        onForward={forward}
-        onGoTo={goTo}
-        onSearchClick={() => push({ type: 'search' })}
-        onProfileClick={() => push({ type: 'profile' })}
-      />
-      <ViewTransition
-        viewKey={computeViewKey(current)}
-        direction={lastDirection}
-      >
-        {renderView()}
-      </ViewTransition>
+      <PreferencesProvider>
+        <NavigationHeader
+          current={current}
+          canGoBack={canGoBack}
+          canGoForward={canGoForward}
+          navEntries={navEntries}
+          onBack={back}
+          onForward={forward}
+          onGoTo={goTo}
+          onSearchClick={() => push({ type: 'search' })}
+          onProfileClick={() => push({ type: 'profile' })}
+        />
+        <ViewTransition
+          viewKey={computeViewKey(current)}
+          direction={lastDirection}
+        >
+          {renderView()}
+        </ViewTransition>
+      </PreferencesProvider>
     </AuthProvider>
   );
 }

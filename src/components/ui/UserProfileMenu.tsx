@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, LogOut, Settings, LogIn, X, ShieldCheck, UserPlus, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { User, LogOut, Settings, LogIn, X, ShieldCheck, UserPlus, Eye, EyeOff, AlertCircle, CheckCircle, Sun, Moon, Lock, ArrowLeft, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { usePreferences } from '../../context/PreferencesContext';
 
 // ─── Color palette for avatar backgrounds ───────────────────────────────────
 
@@ -23,7 +25,7 @@ function getAvatarColor(name: string): string {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type ModalMode = 'login' | 'register';
+type ModalMode = 'login' | 'register' | 'forgotPassword';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +37,7 @@ interface UserProfileMenuProps {
 
 export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
   const { user, isAuthenticated, login, register, logout } = useAuth();
+  const { preferences, toggleTheme, setCompactView } = usePreferences();
   const [showMenu, setShowMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>('login');
@@ -56,6 +59,11 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
   const [regShowConfirm, setRegShowConfirm] = useState(false);
   const [regError, setRegError] = useState('');
   const [regSuccess, setRegSuccess] = useState('');
+
+  // ── Forgot password form state ──
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
 
   // Close menu on click outside
   useEffect(() => {
@@ -99,6 +107,9 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
     setRegConfirmPassword('');
     setRegError('');
     setRegSuccess('');
+    setForgotEmail('');
+    setForgotError('');
+    setForgotSuccess('');
   }, [showAuthModal, modalMode]);
 
   const openModal = (mode: ModalMode) => {
@@ -170,7 +181,36 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
   };
 
   const switchMode = () => {
-    setModalMode((prev) => (prev === 'login' ? 'register' : 'login'));
+    setModalMode((prev) => {
+      if (prev === 'forgotPassword') return 'login';
+      return prev === 'login' ? 'register' : 'login';
+    });
+  };
+
+  const handleForgotPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
+
+    if (!forgotEmail.trim()) {
+      setForgotError('Informe seu e-mail.');
+      return;
+    }
+
+    // Simula envio de e-mail de recuperação
+    const stored = localStorage.getItem('pega-corrupcao-users');
+    if (!stored) {
+      setForgotError('Nenhuma conta encontrada com este e-mail.');
+      return;
+    }
+    const users = JSON.parse(stored);
+    const found = Array.isArray(users) && users.some((u: any) => u.email?.toLowerCase() === forgotEmail.trim().toLowerCase());
+
+    if (found) {
+      setForgotSuccess(`Enviamos um link de recuperação para ${forgotEmail.trim()}. Verifique sua caixa de entrada.`);
+    } else {
+      setForgotError('Nenhuma conta encontrada com este e-mail.');
+    }
   };
 
   const inputClasses = "w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all";
@@ -258,16 +298,41 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
               </div>
             </button>
 
+            {/* ── Theme Toggle ── */}
             <button
-              onClick={() => setShowMenu(false)}
+              onClick={() => {
+                toggleTheme();
+                setShowMenu(false);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-700/60 hover:text-white transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center group-hover:bg-amber-500/20 group-hover:text-amber-400 transition-all">
+                {preferences.theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </div>
+              <div className="text-left">
+                <p className="font-medium">
+                  {preferences.theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+                </p>
+                <p className="text-xs text-slate-500">Alternar tema da interface</p>
+              </div>
+            </button>
+
+            {/* ── Compact View Toggle ── */}
+            <button
+              onClick={() => {
+                setCompactView(!preferences.compactView);
+                setShowMenu(false);
+              }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-700/60 hover:text-white transition-all group"
             >
               <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center group-hover:bg-purple-500/20 group-hover:text-purple-400 transition-all">
                 <Settings size={16} />
               </div>
               <div className="text-left">
-                <p className="font-medium">Configurações</p>
-                <p className="text-xs text-slate-500">Preferências do sistema</p>
+                <p className="font-medium">
+                  {preferences.compactView ? 'Visão Normal' : 'Visão Compacta'}
+                </p>
+                <p className="text-xs text-slate-500">Densidade da interface</p>
               </div>
             </button>
           </div>
@@ -290,15 +355,15 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
         </div>
       )}
 
-      {/* ── Auth Modal (Login / Register) ── */}
-      {showAuthModal && (
+      {/* ── Auth Modal (Login / Register) — renderizado via portal no body ── */}
+      {showAuthModal && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowAuthModal(false);
           }}
         >
-          <div className="relative w-full max-w-md mx-4 bg-slate-800 border border-slate-700 rounded-3xl shadow-2xl shadow-black/50 overflow-hidden">
+          <div className="relative w-full max-w-md mx-4 sm:mx-auto bg-slate-800 border border-slate-700 rounded-3xl shadow-2xl shadow-black/50 my-8 max-h-[calc(100vh-4rem)] flex flex-col">
             {/* Close button */}
             <button
               onClick={() => setShowAuthModal(false)}
@@ -308,30 +373,36 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
             </button>
 
             {/* ── Header ── */}
-            <div className="px-8 pt-8 pb-6 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700/50">
+            <div className="px-6 sm:px-8 pt-8 pb-6 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700/50 flex-shrink-0">
               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-xl mb-4 ${
                 modalMode === 'login'
                   ? 'from-blue-500 to-indigo-600 shadow-blue-500/20'
-                  : 'from-emerald-500 to-teal-600 shadow-emerald-500/20'
+                  : modalMode === 'register'
+                  ? 'from-emerald-500 to-teal-600 shadow-emerald-500/20'
+                  : 'from-amber-500 to-orange-600 shadow-amber-500/20'
               }`}>
                 {modalMode === 'login'
                   ? <LogIn size={28} className="text-white" />
-                  : <UserPlus size={28} className="text-white" />
+                  : modalMode === 'register'
+                  ? <UserPlus size={28} className="text-white" />
+                  : <Lock size={28} className="text-white" />
                 }
               </div>
               <h2 className="text-xl font-bold text-white">
-                {modalMode === 'login' ? 'Entrar no PenteFino' : 'Criar sua Conta'}
+                {modalMode === 'login' ? 'Entrar no PenteFino' : modalMode === 'register' ? 'Criar sua Conta' : 'Recuperar Senha'}
               </h2>
               <p className="text-sm text-slate-400 mt-1">
                 {modalMode === 'login'
                   ? 'Faça login para acessar todos os recursos'
-                  : 'Cadastre-se para começar a usar a plataforma'
+                  : modalMode === 'register'
+                  ? 'Cadastre-se para começar a usar a plataforma'
+                  : 'Receba um link para redefinir sua senha'
                 }
               </p>
             </div>
 
             {/* ── Forms ── */}
-            <div className="px-8 py-6">
+            <div className="px-6 sm:px-8 py-6 overflow-y-auto overscroll-contain flex-1">
               {/* ── Login Form ── */}
               {modalMode === 'login' && (
                 <form onSubmit={handleLogin} className="space-y-4">
@@ -390,8 +461,19 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
                     Entrar
                   </button>
 
+                  {/* Forgot password link */}
+                  <div className="text-center -mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setModalMode('forgotPassword')}
+                      className="text-sm text-slate-500 hover:text-blue-400 transition-colors"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
+
                   {/* Switch to register */}
-                  <div className="text-center pt-2">
+                  <div className="text-center pt-1">
                     <p className="text-sm text-slate-400">
                       Não tem uma conta?{' '}
                       <button
@@ -402,6 +484,77 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
                         Cadastre-se
                       </button>
                     </p>
+                  </div>
+                </form>
+              )}
+
+              {/* ── Forgot Password Form ── */}
+              {modalMode === 'forgotPassword' && (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  {!forgotSuccess ? (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                          E-mail cadastrado
+                        </label>
+                        <input
+                          type="email"
+                          value={forgotEmail}
+                          onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
+                          placeholder="seu@email.com"
+                          className={forgotError ? inputErrorClasses : inputClasses}
+                          required
+                          autoFocus
+                        />
+                      </div>
+
+                      {forgotError && (
+                        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                          <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
+                          <span className="text-sm text-red-400">{forgotError}</span>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 flex items-center justify-center gap-2"
+                      >
+                        <Send size={18} />
+                        Enviar link de recuperação
+                      </button>
+                    </>
+                  ) : (
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <CheckCircle size={20} className="text-emerald-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-emerald-400">E-mail enviado!</p>
+                          <p className="text-xs text-emerald-400/70 mt-1">{forgotSuccess}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 text-center">
+                        Não recebeu o e-mail? Verifique sua caixa de spam ou{' '}
+                        <button
+                          type="button"
+                          onClick={() => { setForgotSuccess(''); setForgotEmail(''); }}
+                          className="text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                          tente novamente
+                        </button>.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Back to login */}
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setModalMode('login')}
+                      className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                    >
+                      <ArrowLeft size={14} />
+                      Voltar para o login
+                    </button>
                   </div>
                 </form>
               )}
@@ -529,7 +682,8 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

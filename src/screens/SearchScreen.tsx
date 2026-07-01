@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp, X, Clock, Gavel } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Fingerprint, ScanLine, Filter, Upload, ChevronDown, ChevronUp, X, Clock, Gavel, Bookmark } from 'lucide-react';
+import { usePreferences } from '../context/PreferencesContext';
 import { buttons, inputs, texts, containers, cards } from '../globalStyle';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
@@ -40,14 +41,20 @@ interface SearchScreenProps {
 }
 
 export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearHistory, onCrossReferenceClick }: SearchScreenProps) {
+  const { preferences, setSavedFilters, clearSavedFilters: clearPrefFilters } = usePreferences();
   const [query, setQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(preferences.savedFilters);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<DialogMode>('search');
   const [pendingQuery, setPendingQuery] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Persist filters to global state whenever they change
+  useEffect(() => {
+    setSavedFilters(selectedFilters);
+  }, [selectedFilters, setSavedFilters]);
 
   const hasActiveFilters = Object.values(selectedFilters).some(arr => arr.length > 0);
   const totalFilters = FILTER_COUNT(selectedFilters);
@@ -75,6 +82,10 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
     setDialogMode('clear');
     setShowConfirmDialog(true);
   };
+
+  // Sincroniza quando as preferências são limpas externamente
+  const hasSavedFilters = Object.keys(preferences.savedFilters).length > 0 ||
+    Object.values(preferences.savedFilters).some(arr => arr.length > 0);
 
   const handleConfirmAction = () => {
     setShowConfirmDialog(false);
@@ -172,6 +183,15 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
               </button>
               
         <div className="flex items-center gap-1">
+          {/* Indicador de filtros salvos */}
+          {hasSavedFilters && (
+            <span
+              className="p-2 rounded-full text-amber-400 bg-amber-500/10 border border-amber-500/20"
+              title="Filtros salvos ativos"
+            >
+              <Bookmark size={16} />
+            </span>
+          )}
           {onCrossReferenceClick && (
             <button
               type="button"

@@ -1,5 +1,6 @@
-import { ArrowLeft, User, ShieldCheck, Mail, Calendar, Key, Smartphone, Clock, LogOut, Settings, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, User, ShieldCheck, Mail, Calendar, Key, Smartphone, Clock, LogOut, Settings, CheckCircle, AlertCircle, Sun, Moon, Bookmark } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { usePreferences } from '../context/PreferencesContext';
 import { buttons, texts, containers, cards } from '../globalStyle';
 
 // ─── Color palette for avatar backgrounds ───────────────────────────────────
@@ -32,6 +33,7 @@ interface UserProfileScreenProps {
 
 export function UserProfileScreen({ onBack, onLogout }: UserProfileScreenProps) {
   const { user, logout } = useAuth();
+  const { preferences, setTheme, setCompactView } = usePreferences();
 
   if (!user) {
     return (
@@ -110,6 +112,79 @@ export function UserProfileScreen({ onBack, onLogout }: UserProfileScreenProps) 
               >
                 <LogOut size={16} /> Sair
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Preferências ── */}
+        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 shadow-lg">
+          <h2 className={texts.h2Section}>
+            <Settings className="text-purple-400" size={20} /> Preferências
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Theme */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-700/30">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-slate-700/50 flex items-center justify-center text-amber-400">
+                  {preferences.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-200">Tema</p>
+                  <p className="text-xs text-slate-500">{preferences.theme === 'dark' ? 'Escuro' : 'Claro'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setTheme(preferences.theme === 'dark' ? 'light' : 'dark')}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20 transition-all"
+              >
+                {preferences.theme === 'dark' ? 'Mudar para Claro' : 'Mudar para Escuro'}
+              </button>
+            </div>
+
+            {/* Compact View */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-700/30">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-slate-700/50 flex items-center justify-center text-purple-400">
+                  <Settings size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-200">Layout compacto</p>
+                  <p className="text-xs text-slate-500">{preferences.compactView ? 'Ativado' : 'Desativado'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCompactView(!preferences.compactView)}
+                className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all ${
+                  preferences.compactView
+                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
+                    : 'bg-slate-700/50 text-slate-400 border-slate-600/50 hover:bg-slate-700'
+                }`}
+              >
+                {preferences.compactView ? 'Desativar' : 'Ativar'}
+              </button>
+            </div>
+
+            {/* Saved Filters Info */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-slate-700/30 sm:col-span-2">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-slate-700/50 flex items-center justify-center text-amber-400">
+                  <Bookmark size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-200">Filtros de busca salvos</p>
+                  <p className="text-xs text-slate-500">
+                    {Object.keys(preferences.savedFilters).length > 0
+                      ? `${Object.values(preferences.savedFilters).reduce((sum, arr) => sum + arr.length, 0)} filtro(s) ativo(s)`
+                      : 'Nenhum filtro salvo'
+                    }
+                  </p>
+                </div>
+              </div>
+              {Object.keys(preferences.savedFilters).length > 0 && (
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  Persistido
+                </span>
+              )}
             </div>
           </div>
         </div>
