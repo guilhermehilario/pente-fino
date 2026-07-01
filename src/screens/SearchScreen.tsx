@@ -13,7 +13,7 @@ const FILTER_CATEGORIES = [
   {
     id: 'confiabilidade',
     label: 'Confiabilidade',
-    options: ['Conformado', 'Verificado', 'Suspeita']
+    options: ['Confirmado', 'Verificado', 'Suspeita']
   },
   {
     id: 'checagem',
@@ -242,18 +242,18 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
               {searchHistory.map((item) => (
                 <div
                   key={item}
-                  className="group flex items-center gap-1 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 rounded-full pl-3 pr-1 py-1.5 transition-all cursor-pointer"
-                  onClick={() => {
+                  className="group flex items-center gap-1 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 rounded-full pl-3 pr-1 py-1.5 transition-all cursor-pointer"                  onClick={() => {
                     setQuery(item);
                     if (hasActiveFilters) {
                       setPendingQuery(item);
                       setDialogMode('search');
                       setShowConfirmDialog(true);
+                    } else if (crossReferenceMode && onCrossReferenceSearch) {
+                      onCrossReferenceSearch(item);
                     } else {
                       onSearch(item);
                     }
-                  }}
-                >
+                  }}>
                   <Clock size={12} className="text-slate-500 shrink-0" />
                   <span className="text-sm text-slate-300 group-hover:text-white transition-colors truncate max-w-[180px]">{item}</span>
                   <button

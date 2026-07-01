@@ -113,6 +113,10 @@ function App() {
   } = useNavigationHistory({ type: 'search' });
   const { searchHistory, addSearch, removeSearch, clearHistory } = useSearchHistory();
 
+  const handleNewTab = useCallback(() => {
+    reset();
+  }, [reset]);
+
   const handleSearch = useCallback((query: string) => {
     addSearch(query);
     push(searchEntity(query));
@@ -233,7 +237,7 @@ function App() {
           onBack={back}
           onForward={forward}
           onGoTo={goTo}
-          onSearchClick={() => push({ type: 'search' })}
+          onNewTab={handleNewTab}
           onProfileClick={() => push({ type: 'profile' })}
         />
         <ViewTransition

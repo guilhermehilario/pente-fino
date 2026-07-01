@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, History, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, History, Plus, BookmarkPlus } from 'lucide-react';
 import type { ViewState, NavEntry } from '../../hooks/useNavigationHistory';
 import { UserProfileMenu } from '../ui/UserProfileMenu';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -13,7 +14,7 @@ interface NavigationHeaderProps {
   onBack: () => void;
   onForward: () => void;
   onGoTo: (index: number) => void;
-  onSearchClick?: () => void;
+  onNewTab?: () => void;
   onProfileClick?: () => void;
 }
 
@@ -39,10 +40,12 @@ export function NavigationHeader({
   onBack,
   onForward,
   onGoTo,
-  onSearchClick,
+  onNewTab,
   onProfileClick,
 }: NavigationHeaderProps) {
+  const { isAuthenticated, user } = useAuth();
   const [showHistory, setShowHistory] = useState(false);
+  const [historySaved, setHistorySaved] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -117,22 +120,14 @@ export function NavigationHeader({
           aria-label="Avançar"
         >
           <ChevronRight size={20} />
-        </button>
-
-        {/* ── Search home ── */}
-        {onSearchClick && (
+        </button>        {/* ── New Tab ── */}
+        {onNewTab && (
           <button
-            onClick={onSearchClick}
-            className={`p-2 rounded-lg transition-all ${
-              current.type !== 'search'
-                ? 'text-slate-300 hover:bg-blue-600/20 hover:text-blue-400 active:bg-blue-600/30 cursor-pointer'
-                : 'text-slate-700 cursor-not-allowed'
-            }`}
-            title={current.type !== 'search' ? 'Ir para a Busca' : 'Você já está na Busca'}
-            aria-label="Ir para a Busca"
-            disabled={current.type === 'search'}
-          >
-            <Search size={20} />
+            onClick={onNewTab}
+            className="p-2 rounded-lg transition-all text-slate-300 hover:bg-emerald-600/20 hover:text-emerald-400 active:bg-emerald-600/30 cursor-pointer"
+            title="Nova Aba (limpar histórico)"
+            aria-label="Nova Aba">
+            <Plus size={20} />
           </button>
         )}
 
@@ -213,11 +208,34 @@ export function NavigationHeader({
             className="absolute top-full left-4 right-4 mt-1 max-w-lg mx-auto bg-slate-800 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
           >
             <div className="px-4 py-3 border-b border-slate-700/50">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                <History size={14} />
-                Histórico de Navegação
-                <span className="text-slate-600 font-normal normal-case">({navEntries.length})</span>
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                  <History size={14} />
+                  Histórico de Navegação
+                  <span className="text-slate-600 font-normal normal-case">({navEntries.length})</span>
+                </p>
+                {isAuthenticated && user && (
+                  <button
+                    onClick={() => {
+                      try {
+                        const savedKey = `pega-corrupcao-saved-nav-${user.email}`;
+                        localStorage.setItem(savedKey, JSON.stringify(navEntries));
+                        setHistorySaved(true);
+                        setTimeout(() => setHistorySaved(false), 2000);
+                      } catch {
+                        // silently give up
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-all ${ historySaved
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-slate-700/50 text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-600/50'}`}
+                    title="Salvar histórico de navegação atual"
+                    aria-label="Salvar histórico">
+                    <BookmarkPlus size={14} />
+                    {historySaved ? 'Salvo!' : 'Salvar'}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="max-h-[50vh] overflow-y-auto py-1">
               {navEntries.map((entry, idx) => {

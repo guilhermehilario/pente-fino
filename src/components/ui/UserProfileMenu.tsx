@@ -239,19 +239,15 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
           <span className="hidden sm:block text-sm font-medium text-slate-300 max-w-[100px] truncate">
             {user.name.split(' ')[0]}
           </span>
-        </button>
-      ) : (
+        </button>      ) : (
         <button
           onClick={() => openModal('login')}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700/60 hover:bg-slate-700 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all group"
+          className="flex items-center justify-center w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700/60 hover:bg-slate-700 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all group"
           title="Fazer login"
-        >
+          aria-label="Fazer login">
           <div className="w-5 h-5 rounded-md bg-slate-700 flex items-center justify-center group-hover:bg-blue-600/30 transition-colors">
             <User size={14} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
           </div>
-          <span className="text-sm font-medium text-slate-400 group-hover:text-blue-400 transition-colors">
-            Entrar
-          </span>
         </button>
       )}
 
