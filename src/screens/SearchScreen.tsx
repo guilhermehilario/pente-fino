@@ -214,9 +214,9 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
           )}
           <button 
             type="submit"
-            className={`${buttons.primary} ${crossReferenceMode ? 'bg-red-600 hover:bg-red-500 shadow-red-500/20' : ''}`}
+            className={`${buttons.primary} ${crossReferenceMode}`}
           >
-            <span className="hidden sm:inline">{crossReferenceMode ? 'Cruzar Dados' : 'Pesquisar'}</span>
+            <span className="hidden sm:inline">{ 'Pesquisar'}</span>
             <ScanLine className="sm:hidden" size={20} />
           </button>
         </div>
