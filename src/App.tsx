@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { PreferencesProvider } from './context/PreferencesContext';
-import { useNavigationHistory, type ViewState } from './hooks/useNavigationHistory';
+import type { ViewState } from './hooks/useNavigationHistory';
+import { useTabNavigation } from './hooks/useTabNavigation';
 import { useSearchHistory } from './hooks/useSearchHistory';
 import { NavigationHeader } from './components/navigation/NavigationHeader';
 import { ViewTransition } from './components/ui/ViewTransition';
@@ -99,23 +100,26 @@ function computeViewKey(current: ViewState): string {
 
 function App() {
   const {
+    tabs,
+    activeTabId,
     current,
     canGoBack,
-    canGoForward,
     lastDirection,
     navEntries,
     push,
     replace,
     back,
-    forward,
     goTo,
     reset,
-  } = useNavigationHistory({ type: 'search' });
+    createTab,
+    closeTab,
+    switchTab,
+  } = useTabNavigation({ type: 'search' });
   const { searchHistory, addSearch, removeSearch, clearHistory } = useSearchHistory();
 
   const handleNewTab = useCallback(() => {
-    reset();
-  }, [reset]);
+    createTab();
+  }, [createTab]);
 
   const handleSearch = useCallback((query: string) => {
     addSearch(query);
@@ -232,12 +236,16 @@ function App() {
         <NavigationHeader
           current={current}
           canGoBack={canGoBack}
-          canGoForward={canGoForward}
+          canGoForward={false}
           navEntries={navEntries}
+          tabs={tabs}
+          activeTabId={activeTabId}
           onBack={back}
-          onForward={forward}
+          onForward={back}
           onGoTo={goTo}
           onNewTab={handleNewTab}
+          onSwitchTab={switchTab}
+          onCloseTab={closeTab}
           onProfileClick={() => push({ type: 'profile' })}
         />
         <ViewTransition

@@ -28,7 +28,7 @@ const STORAGE_VERSION = 3;
 const STORAGE_KEY = `pega-corrupcao-nav-history-v${STORAGE_VERSION}`;
 const MAX_ENTRIES = 50;
 
-function resolveTitle(view: ViewState): string {
+export function resolveTitle(view: ViewState): string {
   switch (view.type) {
     case 'search':
       return 'Busca';

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, History, Plus, BookmarkPlus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, History, Plus, BookmarkPlus, X, Layers } from 'lucide-react';
 import type { ViewState, NavEntry } from '../../hooks/useNavigationHistory';
+import type { TabData } from '../../hooks/useTabNavigation';
 import { UserProfileMenu } from '../ui/UserProfileMenu';
 import { useAuth } from '../../context/AuthContext';
 
@@ -11,10 +12,14 @@ interface NavigationHeaderProps {
   canGoBack: boolean;
   canGoForward: boolean;
   navEntries: NavEntry[];
+  tabs: TabData[];
+  activeTabId: string;
   onBack: () => void;
   onForward: () => void;
   onGoTo: (index: number) => void;
   onNewTab?: () => void;
+  onSwitchTab?: (tabId: string) => void;
+  onCloseTab?: (tabId: string) => void;
   onProfileClick?: () => void;
 }
 
@@ -37,17 +42,25 @@ export function NavigationHeader({
   canGoBack,
   canGoForward,
   navEntries,
+  tabs,
+  activeTabId,
   onBack,
   onForward,
   onGoTo,
   onNewTab,
+  onSwitchTab,
+  onCloseTab,
   onProfileClick,
 }: NavigationHeaderProps) {
   const { isAuthenticated, user } = useAuth();
   const [showHistory, setShowHistory] = useState(false);
+  const [showTabSwitcher, setShowTabSwitcher] = useState(false);
   const [historySaved, setHistorySaved] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const tabSwitcherRef = useRef<HTMLDivElement>(null);
+  const tabSwitcherTriggerRef = useRef<HTMLDivElement>(null);
+  const tabSwitcherTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -75,15 +88,57 @@ export function NavigationHeader({
     };
   }, [showHistory]);
 
-  // Close on Escape
+  // Close tab switcher on click outside
   useEffect(() => {
-    if (!showHistory) return;
+    if (!showTabSwitcher) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        tabSwitcherRef.current &&
+        !tabSwitcherRef.current.contains(e.target as Node) &&
+        tabSwitcherTriggerRef.current &&
+        !tabSwitcherTriggerRef.current.contains(e.target as Node)
+      ) {
+        setShowTabSwitcher(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showTabSwitcher]);
+
+  // Close on Escape for both
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowHistory(false);
+      if (e.key === 'Escape') {
+        setShowHistory(false);
+        setShowTabSwitcher(false);
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showHistory]);
+  }, []);
+
+  const openTabSwitcher = () => {
+    if (tabSwitcherTimer.current) clearTimeout(tabSwitcherTimer.current);
+    setShowTabSwitcher(true);
+  };
+
+  const closeTabSwitcherDelayed = () => {
+    tabSwitcherTimer.current = setTimeout(() => {
+      setShowTabSwitcher(false);
+    }, 200);
+  };
+
+  const cancelCloseTabSwitcher = () => {
+    if (tabSwitcherTimer.current) clearTimeout(tabSwitcherTimer.current);
+  };
 
   const currentTitle = navEntries.length > 0
     ? navEntries[navEntries.length - 1].title
@@ -125,7 +180,7 @@ export function NavigationHeader({
           <button
             onClick={onNewTab}
             className="p-2 rounded-lg transition-all text-slate-300 hover:bg-emerald-600/20 hover:text-emerald-400 active:bg-emerald-600/30 cursor-pointer"
-            title="Nova Aba (limpar histórico)"
+            title="Nova Aba"
             aria-label="Nova Aba">
             <Plus size={20} />
           </button>
@@ -147,6 +202,105 @@ export function NavigationHeader({
               const isLast = idx === navEntries.slice(-3).length - 1;
               const globalIndex = navEntries.length - 3 + idx;
               const icon = viewIcons[entry.view.type] ?? '📄';
+
+              // Last item with multiple tabs → acts as tab switcher trigger
+              if (isLast && tabs.length > 1) {
+                return (
+                  <div
+                    key={globalIndex}
+                    ref={tabSwitcherTriggerRef}
+                    className="relative"
+                    onMouseEnter={openTabSwitcher}
+                    onMouseLeave={closeTabSwitcherDelayed}
+                  >
+                    <button
+                      onClick={() => setShowTabSwitcher(prev => !prev)}
+                      className={`flex items-center gap-1.5 text-sm truncate max-w-[180px] px-2 py-1 rounded-md transition-all whitespace-nowrap text-blue-400 font-medium cursor-pointer hover:bg-blue-600/10 ${
+                        showTabSwitcher ? 'bg-blue-600/15' : ''
+                      }`}
+                      title={`Página atual: ${entry.title} (${tabs.length} abas abertas)`}
+                    >
+                      <span className="flex-shrink-0 text-sm leading-none">{icon}</span>
+                      <span key={entry.title} className="animate-title-enter truncate">
+                        {entry.title}
+                      </span>
+                      <Layers size={14} className="text-blue-400/60 flex-shrink-0 ml-0.5" />
+                    </button>
+
+                    {/* Tab Switcher Popover */}
+                    {showTabSwitcher && (
+                      <div
+                        ref={tabSwitcherRef}
+                        className="absolute top-full left-0 mt-1 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                        onMouseEnter={cancelCloseTabSwitcher}
+                        onMouseLeave={closeTabSwitcherDelayed}
+                      >
+                        <div className="px-4 py-3 border-b border-slate-700/50">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                            <Layers size={14} />
+                            Abas Abertas
+                            <span className="text-slate-600 font-normal normal-case">({tabs.length})</span>
+                          </p>
+                        </div>
+                        <div className="max-h-[40vh] overflow-y-auto py-1">
+                          {tabs.map((tab) => {
+                            const isCurrentTab = tab.id === activeTabId;
+                            const tabIcon = viewIcons[tab.current.type] ?? '📄';
+                            const tabTitle = tab.entries.length > 0
+                              ? tab.entries[tab.entries.length - 1].title
+                              : 'Busca';
+                            return (
+                              <div
+                                key={tab.id}
+                                className={`flex items-center gap-3 px-4 py-2.5 text-left transition-all border-l-2 cursor-pointer ${
+                                  isCurrentTab
+                                    ? 'bg-blue-600/10 border-l-blue-500'
+                                    : 'border-l-transparent hover:bg-slate-700/50 hover:border-l-slate-500'
+                                }`}
+                                onClick={() => {
+                                  onSwitchTab?.(tab.id);
+                                  setShowTabSwitcher(false);
+                                }}
+                              >
+                                {/* Icon */}
+                                <span className="flex-shrink-0 text-base leading-none">{tabIcon}</span>
+
+                                {/* Title + page count */}
+                                <div className="min-w-0 flex-1">
+                                  <p className={`text-sm truncate ${
+                                    isCurrentTab ? 'text-blue-400 font-medium' : 'text-slate-200'
+                                  }`}>
+                                    {tabTitle}
+                                  </p>
+                                  <p className="text-[11px] text-slate-500 mt-0.5">
+                                    {tab.entries.length} página(s)
+                                  </p>
+                                </div>
+
+                                {/* Close button */}
+                                {tabs.length > 1 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onCloseTab?.(tab.id);
+                                    }}
+                                    className="p-1 rounded-full text-slate-500 hover:text-slate-200 hover:bg-slate-600/50 transition-all flex-shrink-0"
+                                    title="Fechar aba"
+                                    aria-label={`Fechar ${tabTitle}`}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <button
                   key={globalIndex}
@@ -197,9 +351,9 @@ export function NavigationHeader({
         </div>
 
           {/* ── Profile / Avatar ── */}
-          <div className="flex items-center ml-auto pl-2 border-l border-slate-700/40">
-            <UserProfileMenu onProfileClick={onProfileClick} />
-          </div>
+        <div className="flex items-center ml-auto pl-2 border-l border-slate-700/40">
+          <UserProfileMenu onProfileClick={onProfileClick} />
+        </div>
 
         {/* ── History Dropdown ── */}
         {showHistory && (
