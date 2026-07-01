@@ -118,6 +118,11 @@ function App() {
     push(searchEntity(query));
   }, [addSearch, push]);
 
+  const handleCrossReferenceSearch = useCallback((query: string) => {
+    addSearch(query);
+    push({ type: 'cross-reference', searchQuery: query });
+  }, [addSearch, push]);
+
   const renderView = () => {
     switch (current.type) {
       case 'search':
@@ -128,6 +133,7 @@ function App() {
             onRemoveSearch={removeSearch}
             onClearHistory={clearHistory}
             onCrossReferenceClick={() => push({ type: 'cross-reference' })}
+            onCrossReferenceSearch={handleCrossReferenceSearch}
           />
         );
 
@@ -202,6 +208,7 @@ function App() {
       case 'cross-reference':
         return (
           <DashboardCruzamento
+            searchQuery={current.searchQuery}
             onBack={() => back()}
             onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
             onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}

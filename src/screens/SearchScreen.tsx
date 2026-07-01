@@ -38,11 +38,13 @@ interface SearchScreenProps {
   onRemoveSearch: (query: string) => void;
   onClearHistory: () => void;
   onCrossReferenceClick?: () => void;
+  onCrossReferenceSearch?: (query: string) => void;
 }
 
-export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearHistory, onCrossReferenceClick }: SearchScreenProps) {
+export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearHistory, onCrossReferenceClick, onCrossReferenceSearch }: SearchScreenProps) {
   const { preferences, setSavedFilters, clearSavedFilters: clearPrefFilters } = usePreferences();
   const [query, setQuery] = useState('');
+  const [crossReferenceMode, setCrossReferenceMode] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(preferences.savedFilters);
@@ -61,9 +63,13 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
 
   const executeSearch = useCallback((searchQuery: string) => {
     if (searchQuery.trim()) {
-      onSearch(searchQuery.trim());
+      if (crossReferenceMode && onCrossReferenceSearch) {
+        onCrossReferenceSearch(searchQuery.trim());
+      } else {
+        onSearch(searchQuery.trim());
+      }
     }
-  }, [onSearch]);
+  }, [onSearch, crossReferenceMode, onCrossReferenceSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,18 +201,29 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
           {onCrossReferenceClick && (
             <button
               type="button"
-              onClick={onCrossReferenceClick}
-              className="p-2.5 rounded-full text-slate-400 hover:bg-slate-700 hover:text-red-400 transition-all flex items-center gap-2"
-              title="Dashboard de Cruzamento"
+              onClick={() => {
+                if (crossReferenceMode) {
+                  setCrossReferenceMode(false);
+                } else {
+                  setCrossReferenceMode(true);
+                }
+              }}
+              className={`p-2.5 rounded-full transition-all flex items-center gap-2 ${
+                crossReferenceMode
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-500/30 ring-2 ring-red-500/50'
+                  : 'text-slate-400 hover:bg-slate-700 hover:text-red-400'
+              }`}
+              title={crossReferenceMode ? 'Modo Cruzamento Ativo - Clique para desativar' : 'Ativar modo Cruzamento de Dados'}
             >
               <Gavel size={20} />
+              {crossReferenceMode && <span className="text-xs font-medium hidden sm:inline">Cruzamento</span>}
             </button>
           )}
           <button 
             type="submit"
-            className={buttons.primary}
+            className={`${buttons.primary} ${crossReferenceMode ? 'bg-red-600 hover:bg-red-500 shadow-red-500/20' : ''}`}
           >
-            <span className="hidden sm:inline">Pesquisar</span>
+            <span className="hidden sm:inline">{crossReferenceMode ? 'Cruzar Dados' : 'Pesquisar'}</span>
             <ScanLine className="sm:hidden" size={20} />
           </button>
         </div>

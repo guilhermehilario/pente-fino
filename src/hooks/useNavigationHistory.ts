@@ -10,7 +10,7 @@ export type ViewState =
   | { type: 'company-detail'; companyId: number }
   | { type: 'politician-detail'; politicianId: number }
   | { type: 'graph'; centerType?: 'politician' | 'company'; centerId?: number }
-  | { type: 'cross-reference' }
+  | { type: 'cross-reference'; searchQuery?: string }
   | { type: 'profile' };
 
 // ─── History entry ──────────────────────────────────────────────────────────

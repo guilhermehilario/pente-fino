@@ -24,6 +24,9 @@ import {
   ArrowUpDown,
   UserCheck,
   Briefcase,
+  Edit2,
+  Eye,
+  Share2,
 } from 'lucide-react';
 import { fetchCrossReferenceDashboard } from '../data/crossReferenceMockData';
 import {
@@ -46,6 +49,7 @@ import type {
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface DashboardCruzamentoProps {
+  searchQuery?: string;
   onBack: () => void;
   onPoliticianClick?: (id: number) => void;
   onCompanyClick?: (id: number) => void;
@@ -70,6 +74,7 @@ const alertDotColors: Record<string, string> = {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export function DashboardCruzamento({
+  searchQuery: searchQueryProp,
   onBack,
   onPoliticianClick,
   onCompanyClick,
@@ -77,7 +82,14 @@ export function DashboardCruzamento({
 }: DashboardCruzamentoProps) {
   const [activeCrossTab, setActiveCrossTab] = useState<CrossTab>('crossReferences');
   const [activeRankingTab, setActiveRankingTab] = useState<RankingTab>('politicians');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchQueryProp || '');
+
+  // Inicializa o filtro com a query recebida
+  useEffect(() => {
+    if (searchQueryProp) {
+      setSearchQuery(searchQueryProp);
+    }
+  }, [searchQueryProp]);
   const [showAllCross, setShowAllCross] = useState(false);
   const [showAllContracts, setShowAllContracts] = useState(false);
   const [sortField, setSortField] = useState<SortField>('value');
@@ -202,7 +214,34 @@ export function DashboardCruzamento({
 
         {!loading && !error && (
           <>
-          {/* ── Header ── */}
+          {/* ── Top Navigation ── */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <button onClick={onBack} className={buttons.back}>
+            <ArrowLeft size={16} /> Voltar para Busca
+          </button>
+
+          {/* ── Data Management Buttons ── */}
+          <div className="flex items-center gap-2">
+            <button className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-sm font-medium rounded-lg transition-all border border-blue-500/20 flex items-center gap-2">
+              <Edit2 size={16} /> Edição de Dados
+            </button>
+            <button className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-sm font-medium rounded-lg transition-all border border-emerald-500/20 flex items-center gap-2">
+              <Eye size={16} /> Revisão de Dados
+            </button>
+          </div>
+        </div>
+
+        {/* ── Search Query Indicator ── */}
+        {searchQueryProp && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 rounded-xl border border-slate-700/50">
+            <Search size={16} className="text-slate-500 flex-shrink-0" />
+            <span className="text-sm text-slate-400">
+              Cruzamento focado em: <span className="font-medium text-slate-200">"{searchQueryProp}"</span>
+            </span>
+          </div>
+        )}
+
+        {/* ── Header ── */}
         <header className="bg-gradient-to-br from-slate-800/80 to-slate-800/40 p-6 md:p-8 rounded-2xl border border-slate-700/50 backdrop-blur-md shadow-lg">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center gap-5">
@@ -219,7 +258,7 @@ export function DashboardCruzamento({
             <div className="flex flex-wrap items-center gap-3 min-w-0">
               {onGraphClick && (
                 <button onClick={onGraphClick} className={`${buttons.secondary} flex items-center gap-2 whitespace-nowrap`}>
-                  <ExternalLink size={16} /> Mapa de Conexões
+                  <Share2 size={16} /> Editar Mapa de Conexões
                 </button>
               )}
               <div className="flex items-center gap-2 bg-slate-900/60 px-3 py-2 rounded-xl border border-slate-700/50 min-w-0">
@@ -615,7 +654,7 @@ export function DashboardCruzamento({
           <div className="space-y-6 min-w-0">
 
             {/* Ranking Tabs */}
-            <div className={cards.contactInfoCard}>
+            <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 shadow-lg h-fit overflow-hidden">
               <div className={containers.tableHeaderWrapper}>
                 <h2 className={texts.h2Table}>
                   <TrendingUp className="text-amber-400" size={20} /> Ranking
@@ -636,7 +675,7 @@ export function DashboardCruzamento({
                 </div>
               </div>
 
-              <div className="p-5 pt-0 space-y-2 min-w-0">
+              <div className="p-6 pt-0 space-y-2 min-w-0">
                 {activeRankingTab === 'politicians'
                   ? politiciansByValue.map((p, idx) => <RankingRow key={p.id} rank={idx + 1} name={p.name} subtitle={`${p.role} · ${p.party}`} value={p.totalContractValue} severity={p.maxSeverity} contractCount={p.contractCount} onClick={() => onPoliticianClick?.(p.id)} />)
                   : companiesByValue.map((c, idx) => <RankingRow key={c.id} rank={idx + 1} name={c.name} subtitle={c.cnpj} value={c.totalContractValue} severity={c.maxSeverity} contractCount={c.contractCount} onClick={() => onCompanyClick?.(c.id)} />)
