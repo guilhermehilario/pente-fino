@@ -111,10 +111,7 @@ export function NetworkGraphScreen({
       {/* ── Top bar ── */}
       <header className="flex items-center justify-between px-6 py-4 bg-slate-900/95 border-b border-slate-800 backdrop-blur-md z-20 sticky top-0">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className={buttons.back}>
-            <ArrowLeft size={16} /> Voltar
-          </button>
-          <div className="h-6 w-px bg-slate-700" />
+          {/* <div className="h-6 w-px bg-slate-700" /> */}
           <div className="flex items-center gap-2">
             <Share2 size={20} className="text-blue-400" />
             <h1 className="text-xl font-bold text-white tracking-tight">

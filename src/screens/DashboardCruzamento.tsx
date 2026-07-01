@@ -184,11 +184,6 @@ export function DashboardCruzamento({
     <div className={containers.screenDashboard}>
       <div className={containers.dashboardWrapper}>
 
-        {/* ── Top Navigation ── */}
-        <button onClick={onBack} className={buttons.back}>
-          <ArrowLeft size={16} /> Voltar para Busca
-        </button>
-
         {/* ── Loading / Error State ── */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">

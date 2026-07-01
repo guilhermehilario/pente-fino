@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { User, LogOut, Settings, LogIn, X, ShieldCheck, UserPlus, Eye, EyeOff, AlertCircle, CheckCircle, Sun, Moon, Lock, ArrowLeft, Send } from 'lucide-react';
+import { User, LogOut, Settings, LogIn, X, ShieldCheck, UserPlus, Eye, EyeOff, AlertCircle, CheckCircle, Sun, Moon, ArrowLeft, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePreferences } from '../../context/PreferencesContext';
 
@@ -373,29 +373,15 @@ export function UserProfileMenu({ onProfileClick }: UserProfileMenuProps) {
             </button>
 
             {/* ── Header ── */}
-            <div className="px-6 sm:px-8 pt-8 pb-6 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700/50 flex-shrink-0">
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-xl mb-4 ${
-                modalMode === 'login'
-                  ? 'from-blue-500 to-indigo-600 shadow-blue-500/20'
-                  : modalMode === 'register'
-                  ? 'from-emerald-500 to-teal-600 shadow-emerald-500/20'
-                  : 'from-amber-500 to-orange-600 shadow-amber-500/20'
-              }`}>
-                {modalMode === 'login'
-                  ? <LogIn size={28} className="text-white" />
-                  : modalMode === 'register'
-                  ? <UserPlus size={28} className="text-white" />
-                  : <Lock size={28} className="text-white" />
-                }
-              </div>
-              <h2 className="text-xl font-bold text-white">
-                {modalMode === 'login' ? 'Entrar no PenteFino' : modalMode === 'register' ? 'Criar sua Conta' : 'Recuperar Senha'}
+            <div className="px-6 sm:px-8 pt-5 pb-4 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700/50 flex-shrink-0">
+              <h2 className="text-lg font-semibold text-white">
+                {modalMode === 'login' ? 'Entrar' : modalMode === 'register' ? 'Criar Conta' : 'Recuperar Senha'}
               </h2>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-slate-400 mt-0.5">
                 {modalMode === 'login'
-                  ? 'Faça login para acessar todos os recursos'
+                  ? 'Acesse sua conta para continuar'
                   : modalMode === 'register'
-                  ? 'Cadastre-se para começar a usar a plataforma'
+                  ? 'Cadastre-se para começar a usar'
                   : 'Receba um link para redefinir sua senha'
                 }
               </p>
