@@ -10,7 +10,8 @@ export type ViewState =
   | { type: 'company-detail'; companyId: number }
   | { type: 'politician-detail'; politicianId: number }
   | { type: 'graph'; centerType?: 'politician' | 'company'; centerId?: number }
-  | { type: 'cross-reference' };
+  | { type: 'cross-reference' }
+  | { type: 'profile' };
 
 // ─── History entry ──────────────────────────────────────────────────────────
 
@@ -51,6 +52,8 @@ function resolveTitle(view: ViewState): string {
       return 'Mapa de Conexões';
     case 'cross-reference':
       return 'Dashboard de Cruzamento';
+    case 'profile':
+      return 'Meu Perfil';
   }
 }
 
@@ -85,6 +88,8 @@ function isValidEntry(raw: unknown): raw is NavEntry {
       if (view.centerId !== undefined && typeof view.centerId !== 'number') return false;
       return true;
     case 'cross-reference':
+      return true;
+    case 'profile':
       return true;
     default:
       return false; // tipo desconhecido

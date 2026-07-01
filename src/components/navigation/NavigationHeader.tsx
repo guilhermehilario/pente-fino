@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, History, Search } from 'lucide-react';
 import type { ViewState, NavEntry } from '../../hooks/useNavigationHistory';
+import { UserProfileMenu } from '../ui/UserProfileMenu';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -13,6 +14,7 @@ interface NavigationHeaderProps {
   onForward: () => void;
   onGoTo: (index: number) => void;
   onSearchClick?: () => void;
+  onProfileClick?: () => void;
 }
 
 // ─── Icon mapping per view type ────────────────────────────────────────────
@@ -38,6 +40,7 @@ export function NavigationHeader({
   onForward,
   onGoTo,
   onSearchClick,
+  onProfileClick,
 }: NavigationHeaderProps) {
   const [showHistory, setShowHistory] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -197,6 +200,11 @@ export function NavigationHeader({
             </button>
           )}
         </div>
+
+          {/* ── Profile / Avatar ── */}
+          <div className="flex items-center ml-auto pl-2 border-l border-slate-700/40">
+            <UserProfileMenu onProfileClick={onProfileClick} />
+          </div>
 
         {/* ── History Dropdown ── */}
         {showHistory && (

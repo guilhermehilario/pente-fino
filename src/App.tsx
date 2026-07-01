@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { AuthProvider } from './context/AuthContext';
 import { useNavigationHistory, type ViewState } from './hooks/useNavigationHistory';
 import { useSearchHistory } from './hooks/useSearchHistory';
 import { NavigationHeader } from './components/navigation/NavigationHeader';
@@ -10,6 +11,7 @@ import { PoliticianDetailScreen } from './screens/PoliticianDetailScreen';
 import { CompanyDetailScreen } from './screens/CompanyDetailScreen';
 import { NetworkGraphScreen } from './screens/NetworkGraphScreen';
 import { DashboardCruzamento } from './screens/DashboardCruzamento';
+import { UserProfileScreen } from './screens/UserProfileScreen';
 import { mockPoliticians, mockCompanies } from './data/mockData';
 
 /** Busca o melhor resultado correspondente nos dados mockados. */
@@ -206,13 +208,21 @@ function App() {
           />
         );
 
+      case 'profile':
+        return (
+          <UserProfileScreen
+            onBack={() => back()}
+            onLogout={() => push({ type: 'search' })}
+          />
+        );
+
       default:
         return <SearchScreen onSearch={handleSearch} />;
     }
   };
 
   return (
-    <>
+    <AuthProvider>
       <NavigationHeader
         current={current}
         canGoBack={canGoBack}
@@ -222,6 +232,7 @@ function App() {
         onForward={forward}
         onGoTo={goTo}
         onSearchClick={() => push({ type: 'search' })}
+        onProfileClick={() => push({ type: 'profile' })}
       />
       <ViewTransition
         viewKey={computeViewKey(current)}
@@ -229,7 +240,7 @@ function App() {
       >
         {renderView()}
       </ViewTransition>
-    </>
+    </AuthProvider>
   );
 }
 
