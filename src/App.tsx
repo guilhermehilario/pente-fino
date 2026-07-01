@@ -80,22 +80,25 @@ function searchEntity(query: string): { type: 'company'; companyId: number } | {
   return { type: 'company', companyId: 1 };
 }
 
-/** Gera uma chave única para cada tipo de view (usada pelo ViewTransition). */
-function computeViewKey(current: ViewState): string {
-  switch (current.type) {
-    case 'company':
-    case 'company-detail':
-      return `${current.type}-${current.companyId}`;
-    case 'person':
-    case 'politician-detail':
-      return `${current.type}-${current.politicianId}`;
-    case 'graph':
-      return current.centerType && current.centerId
-        ? `${current.type}-${current.centerType}-${current.centerId}`
-        : current.type;
-    default:
-      return current.type;
-  }
+/** Gera uma chave única para cada tipo de view + aba ativa (usada pelo ViewTransition). */
+function computeViewKey(current: ViewState, activeTabId: string): string {
+  const baseKey = (() => {
+    switch (current.type) {
+      case 'company':
+      case 'company-detail':
+        return `${current.type}-${current.companyId}`;
+      case 'person':
+      case 'politician-detail':
+        return `${current.type}-${current.politicianId}`;
+      case 'graph':
+        return current.centerType && current.centerId
+          ? `${current.type}-${current.centerType}-${current.centerId}`
+          : current.type;
+      default:
+        return current.type;
+    }
+  })();
+  return `${baseKey}__${activeTabId}`;
 }
 
 function App() {
@@ -249,7 +252,7 @@ function App() {
           onProfileClick={() => push({ type: 'profile' })}
         />
         <ViewTransition
-          viewKey={computeViewKey(current)}
+          viewKey={computeViewKey(current, activeTabId)}
           direction={lastDirection}
         >
           {renderView()}
