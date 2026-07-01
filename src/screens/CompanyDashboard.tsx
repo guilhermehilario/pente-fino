@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   Building2, Calendar, DollarSign, FileText, Users, ArrowUpRight, 
-  ShieldCheck, Landmark, ArrowLeft, Share2, ChevronRight
+  ShieldCheck, Landmark, Share2, ChevronRight
 } from 'lucide-react';
 import { mockCompanies } from '../data/mockData';
 import { StatCard } from '../components/ui/StatCard';
@@ -10,13 +10,12 @@ import { buttons, texts, containers, tables } from '../globalStyle';
 
 interface CompanyDashboardProps {
   companyId: number;
-  onBack: () => void;
   onPoliticianClick?: (id: number) => void;
   onGraphClick?: () => void;
   onDetailClick?: () => void;
 }
 
-export function CompanyDashboard({ companyId, onBack, onPoliticianClick, onGraphClick, onDetailClick }: CompanyDashboardProps) {
+export function CompanyDashboard({ companyId, onPoliticianClick, onGraphClick, onDetailClick }: CompanyDashboardProps) {
   const [activeTab, setActiveTab] = useState<'politicians' | 'partners'>('politicians');
   const company = mockCompanies[companyId];
 

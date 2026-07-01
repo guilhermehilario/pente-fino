@@ -6,7 +6,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import {
-  ArrowLeft,
   Users,
   Building2,
   FileText,
@@ -50,7 +49,6 @@ import type {
 
 interface DashboardCruzamentoProps {
   searchQuery?: string;
-  onBack: () => void;
   onPoliticianClick?: (id: number) => void;
   onCompanyClick?: (id: number) => void;
   onGraphClick?: () => void;
@@ -75,7 +73,6 @@ const alertDotColors: Record<string, string> = {
 
 export function DashboardCruzamento({
   searchQuery: searchQueryProp,
-  onBack,
   onPoliticianClick,
   onCompanyClick,
   onGraphClick,
@@ -215,10 +212,7 @@ export function DashboardCruzamento({
         {!loading && !error && (
           <>
           {/* ── Top Navigation ── */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <button onClick={onBack} className={buttons.back}>
-            <ArrowLeft size={16} /> Voltar para Busca
-          </button>
+        <div className="flex items-center justify-end gap-4 flex-wrap">
 
           {/* ── Data Management Buttons ── */}
           <div className="flex items-center gap-2">

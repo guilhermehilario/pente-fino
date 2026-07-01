@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  ArrowLeft, Building2, ShieldCheck, FileText, DollarSign, Calendar,
+  Building2, ShieldCheck, FileText, DollarSign, Calendar,
   AlertTriangle, Users, Landmark, ChevronDown, ChevronUp,
   ExternalLink, Mail, Phone, MapPin, TrendingUp, Briefcase, FileWarning,
   ChevronRight, Share2
@@ -10,7 +10,6 @@ import { buttons, texts, containers, tables, cards } from '../globalStyle';
 
 interface CompanyDetailScreenProps {
   company: CompanyDetail;
-  onBack: () => void;
   onPoliticianClick: (politicianId: number) => void;
   onGraphClick?: () => void;
 }
@@ -21,7 +20,7 @@ const alertConfig = {
   yellow: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-500' },
 };
 
-export function CompanyDetailScreen({ company, onBack, onPoliticianClick, onGraphClick }: CompanyDetailScreenProps) {
+export function CompanyDetailScreen({ company, onPoliticianClick, onGraphClick }: CompanyDetailScreenProps) {
   const [activeTab, setActiveTab] = useState<'partners' | 'politicians'>('partners');
   const [showAllContracts, setShowAllContracts] = useState(false);
 

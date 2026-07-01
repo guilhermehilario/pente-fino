@@ -1,4 +1,4 @@
-import { ArrowLeft, User, ShieldCheck, Mail, Calendar, Key, Smartphone, Clock, LogOut, Settings, CheckCircle, AlertCircle, Sun, Moon, Bookmark } from 'lucide-react';
+import { User, ShieldCheck, Mail, Calendar, Key, Smartphone, Clock, LogOut, Settings, CheckCircle, AlertCircle, Sun, Moon, Bookmark } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../context/PreferencesContext';
 import { buttons, texts, containers, cards } from '../globalStyle';
@@ -25,13 +25,12 @@ function getAvatarColor(name: string): string {
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface UserProfileScreenProps {
-  onBack: () => void;
   onLogout?: () => void;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function UserProfileScreen({ onBack, onLogout }: UserProfileScreenProps) {
+export function UserProfileScreen({ onLogout }: UserProfileScreenProps) {
   const { user, logout } = useAuth();
   const { preferences, setTheme, setCompactView } = usePreferences();
 
@@ -66,11 +65,6 @@ export function UserProfileScreen({ onBack, onLogout }: UserProfileScreenProps) 
   return (
     <div className={containers.screenDashboard}>
       <div className={containers.dashboardWrapper}>
-        {/* ── Back ── */}
-        <button onClick={onBack} className={buttons.back}>
-          <ArrowLeft size={16} /> Voltar
-        </button>
-
         {/* ── Profile Header ── */}
         <div className="bg-gradient-to-br from-slate-800/80 to-slate-800/40 p-6 md:p-8 rounded-2xl border border-slate-700/50 backdrop-blur-md shadow-lg">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">

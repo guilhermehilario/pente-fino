@@ -201,14 +201,8 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
           {onCrossReferenceClick && (
             <button
               type="button"
-              onClick={() => {
-                if (crossReferenceMode) {
-                  setCrossReferenceMode(false);
-                } else {
-                  setCrossReferenceMode(true);
-                }
-              }}
-              className={`p-2.5 rounded-full transition-all flex items-center gap-2 ${
+              onClick={() => setCrossReferenceMode(!crossReferenceMode)}
+              className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
                 crossReferenceMode
                   ? 'bg-red-600 text-white shadow-lg shadow-red-500/30 ring-2 ring-red-500/50'
                   : 'text-slate-400 hover:bg-slate-700 hover:text-red-400'
@@ -216,7 +210,6 @@ export function SearchScreen({ onSearch, searchHistory, onRemoveSearch, onClearH
               title={crossReferenceMode ? 'Modo Cruzamento Ativo - Clique para desativar' : 'Ativar modo Cruzamento de Dados'}
             >
               <Gavel size={20} />
-              {crossReferenceMode && <span className="text-xs font-medium hidden sm:inline">Cruzamento</span>}
             </button>
           )}
           <button 

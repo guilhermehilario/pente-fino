@@ -10,13 +10,12 @@ import { buttons, texts, containers, tables } from '../globalStyle';
 
 interface PersonDashboardProps {
   personId: number;
-  onBack: () => void;
   onDetailClick?: () => void;
   onCompanyClick?: (id: number) => void;
   onGraphClick?: () => void;
 }
 
-export function PersonDashboard({ personId, onBack, onDetailClick, onCompanyClick, onGraphClick }: PersonDashboardProps) {
+export function PersonDashboard({ personId, onDetailClick, onCompanyClick, onGraphClick }: PersonDashboardProps) {
   const [activeTab, setActiveTab] = useState<'companies' | 'people'>('companies');
   const person = mockPoliticians[personId];
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  ArrowLeft, Landmark, ShieldCheck, Briefcase, Wallet, Calendar,
+  Landmark, ShieldCheck, Briefcase, Wallet, Calendar,
   Gavel, Building2, ChevronDown, ChevronUp,
   ExternalLink, Mail, Phone, MapPin, Award, UserCheck, FileWarning, Share2
 } from 'lucide-react';
@@ -9,7 +9,6 @@ import { buttons, texts, containers, tables, cards } from '../globalStyle';
 
 interface PoliticianDetailScreenProps {
   politician: PoliticianDetail;
-  onBack: () => void;
   onCompanyClick: (companyId: number) => void;
   onGraphClick?: () => void;
 }
@@ -20,7 +19,7 @@ const alertConfig = {
   yellow: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-500' },
 };
 
-export function PoliticianDetailScreen({ politician, onBack, onCompanyClick, onGraphClick }: PoliticianDetailScreenProps) {
+export function PoliticianDetailScreen({ politician, onCompanyClick, onGraphClick }: PoliticianDetailScreenProps) {
   const [showFullCareer, setShowFullCareer] = useState(false);
   const [showFullProcesses, setShowFullProcesses] = useState(false);
 

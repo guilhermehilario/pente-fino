@@ -1,7 +1,7 @@
 import { useRef, useState, useMemo, useCallback, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import {
-  ArrowLeft, Share2, Filter, Search, X, ZoomIn, ZoomOut,
+  Share2, Filter, Search, X, ZoomIn, ZoomOut,
   RotateCcw, Users, Building2
 } from 'lucide-react';
 import { buildFullGraph, buildFocusedGraph, type GraphNode, type GraphLink } from '../data/graphData';
@@ -11,7 +11,6 @@ import { buttons, texts, containers } from '../globalStyle';
 
 interface NetworkGraphScreenProps {
   initialCenter?: { type: 'politician' | 'company'; id: number };
-  onBack: () => void;
   onPoliticianClick: (id: number) => void;
   onCompanyClick: (id: number) => void;
 }
@@ -20,7 +19,6 @@ interface NetworkGraphScreenProps {
 
 export function NetworkGraphScreen({
   initialCenter,
-  onBack,
   onPoliticianClick,
   onCompanyClick,
 }: NetworkGraphScreenProps) {

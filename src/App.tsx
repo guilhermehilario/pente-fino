@@ -141,7 +141,6 @@ function App() {
         return (
           <CompanyDashboard
             companyId={current.companyId}
-            onBack={() => back()}
             onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
             onGraphClick={() => push({ type: 'graph', centerType: 'company', centerId: current.companyId })}
             onDetailClick={() => replace({ type: 'company-detail', companyId: current.companyId })}
@@ -152,7 +151,6 @@ function App() {
         return (
           <PersonDashboard
             personId={current.personId}
-            onBack={() => back()}
             onDetailClick={() => replace({ type: 'politician-detail', politicianId: current.personId })}
             onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}
             onGraphClick={() => push({ type: 'graph', centerType: 'politician', centerId: current.personId })}
@@ -168,7 +166,6 @@ function App() {
         return (
           <PoliticianDetailScreen
             politician={politician}
-            onBack={() => back()}
             onCompanyClick={(companyId) => push({ type: 'company-detail', companyId })}
             onGraphClick={() => push({ type: 'graph', centerType: 'politician', centerId: current.politicianId })}
           />
@@ -184,7 +181,6 @@ function App() {
         return (
           <CompanyDetailScreen
             company={company}
-            onBack={() => back()}
             onPoliticianClick={(politicianId) => push({ type: 'politician-detail', politicianId })}
             onGraphClick={() => push({ type: 'graph', centerType: 'company', centerId: current.companyId })}
           />
@@ -199,7 +195,6 @@ function App() {
                 ? { type: current.centerType, id: current.centerId }
                 : undefined
             }
-            onBack={() => back()}
             onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
             onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}
           />
@@ -209,7 +204,6 @@ function App() {
         return (
           <DashboardCruzamento
             searchQuery={current.searchQuery}
-            onBack={() => back()}
             onPoliticianClick={(id) => push({ type: 'politician-detail', politicianId: id })}
             onCompanyClick={(id) => push({ type: 'company-detail', companyId: id })}
             onGraphClick={() => push({ type: 'graph' })}
@@ -219,7 +213,6 @@ function App() {
       case 'profile':
         return (
           <UserProfileScreen
-            onBack={() => back()}
             onLogout={() => push({ type: 'search' })}
           />
         );
